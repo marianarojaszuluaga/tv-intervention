@@ -106,7 +106,9 @@ y en la columna Permissions de `addons/README.md`, como exige el test.
 
 1. ✅ **Contrato compartido** (hecho el 30 oct 2026): `/api/health` con `can`, `telefono.html` esconde lo que no hay, HOME manda `{"home": true}`. Probado en el simulador con la lista de webOS y la de Android.
 2. ✅ **Add-on mínimo** (código hecho el 30 oct 2026 en `android/terminal/`, listo para copiar a `addons/terminal/`;
-   26 pruebas JVM pasan, lint 0 errores, APK de 52 KB; **sin probar en emulador ni TV**). Era: tarjeta, pantalla (saludo, trato, reloj, clima, 4 temas, pad, QR) y servidor mientras está abierta. Pruebas unitarias en Java como los demás add-ons (servidor, validación de ajustes, pad).
+   27 pruebas JVM pasan, lint 0 errores, APK de 52 KB). **Probado en el emulador de Android TV 14 (1080p)**: pantalla,
+   4 temas, ajustes en vivo desde el teléfono, clima, pad en vivo, guardar dibujo, volumen, abrir apps, botones que
+   Android no deja (rechazados con mensaje) y servidor que se apaga al salir. **Falta una TV real.** Era: tarjeta, pantalla (saludo, trato, reloj, clima, 4 temas, pad, QR) y servidor mientras está abierta. Pruebas unitarias en Java como los demás add-ons (servidor, validación de ajustes, pad).
 3. **Prueba en una Android TV real** + `screenshot.jpg` + fila en `addons/README.md` → PR `addons: Terminal, a live pad and phone settings`.
 4. **Repo webOS propio** + fila en `SHOWCASE.md` (PR aparte).
 5. Opcionales: "Pad siempre listo" (foreground service), abrir el pad solo (superposición), flechas por accesibilidad (Android 13+), `themes/terminal/`.

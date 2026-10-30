@@ -54,5 +54,8 @@ public class SettingsTest {
     @Test public void wordingFollowsPlural() throws Exception {
         assertTrue(Settings.padLine(Settings.defaults()).startsWith("Dibuja "));
         assertTrue(Settings.padLine(new JSONObject().put("plural", true)).startsWith("Dibujemos"));
+        assertTrue(Settings.qrHint(Settings.defaults()).contains("pestaña Pad"));
+        JSONObject noPad = Settings.merge(Settings.defaults(), new JSONObject().put("blocks", new JSONObject().put("pad", false)));
+        assertEquals("Escanea el QR para abrir el control.", Settings.qrHint(noPad));
     }
 }

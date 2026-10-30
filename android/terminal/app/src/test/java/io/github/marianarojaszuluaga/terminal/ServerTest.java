@@ -56,7 +56,7 @@ public class ServerTest {
 
     @Before public void start() throws Exception {
         dir = Files.createTempDirectory("terminal").toFile();
-        server = new Server(host, dir);
+        server = new Server(host, dir, new Live());
         server.start(0);
     }
 
@@ -113,7 +113,7 @@ public class ServerTest {
         assertEquals("http://192.168.1.50:8765/control", info.getString("control"));
         assertEquals(1, configs.size());
         // A new server (the screen opened again) reads it back from the file.
-        Server again = new Server(host, dir);
+        Server again = new Server(host, dir, new Live());
         assertEquals("ambar", again.config().getString("theme"));
         assertTrue(again.config().getBoolean("plural"));
     }
@@ -184,5 +184,20 @@ public class ServerTest {
         assertEquals("30/10 4:05 p. m.", Server.stamp(c.getTime()));
         c.set(2026, 9, 3, 0, 7);
         assertEquals("03/10 12:07 a. m.", Server.stamp(c.getTime()));
+    }
+
+    @Test public void theDrawingSurvivesTheScreenClosing() throws Exception {
+        Live live = new Live();
+        Server first = new Server(host, dir, live);
+        first.start(0);
+        HttpURLConnection c = (HttpURLConnection) new URL("http://127.0.0.1:" + first.port() + "/api/live").openConnection();
+        c.setRequestMethod("POST");
+        c.setDoOutput(true);
+        try (OutputStream o = c.getOutputStream()) {
+            o.write("{\"ops\":[{\"t\":\"start\",\"p\":[[0.1,0.1]]}]}".getBytes(StandardCharsets.UTF_8));
+        }
+        assertEquals(200, c.getResponseCode());
+        first.stop();
+        assertEquals(1, new Server(host, dir, live).liveState().getJSONArray("strokes").length());
     }
 }

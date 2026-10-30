@@ -45,6 +45,9 @@ public final class TerminalActivity extends Activity implements Server.Host {
     private static final long KEEP_AWAKE_MS = 5 * 60 * 1000;
     private static final Locale ES = new Locale("es");
 
+    // The pad lives as long as the app's process, like the webOS service's: leaving the screen doesn't erase it.
+    private static final Live LIVE = new Live();
+
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ExecutorService work = Executors.newSingleThreadExecutor();
     private final Map<String, byte[]> icons = new ConcurrentHashMap<>();
@@ -77,7 +80,7 @@ public final class TerminalActivity extends Activity implements Server.Host {
 
     @Override protected void onStart() {
         super.onStart();
-        server = new Server(this, getFilesDir());
+        server = new Server(this, getFilesDir(), LIVE);
         serverError = null;
         try {
             server.start(Server.PORT);
@@ -148,6 +151,7 @@ public final class TerminalActivity extends Activity implements Server.Host {
         wDaysRow.setPadding(0, dp(12), 0, 0);
         for (int i = 0; i < 3; i++) {
             wDays[i] = text(16, false);
+            wDays[i].setSingleLine(true);
             wDaysRow.addView(wDays[i], new LinearLayout.LayoutParams(0, -2, 1));
         }
         weatherCard.addView(wDaysRow);
@@ -287,7 +291,7 @@ public final class TerminalActivity extends Activity implements Server.Host {
         wTemp.setText(n.temp + "°");
         wCond.setText(n.condition);
         wFeels.setText("Sensación " + n.feels + "°");
-        for (int i = 0; i < 3; i++) wDays[i].setText(n.days[i] == null ? "" : n.days[i] + "  " + n.max[i] + "° / " + n.min[i] + "°");
+        for (int i = 0; i < 3; i++) wDays[i].setText(n.days[i] == null ? "" : n.days[i] + " " + n.max[i] + "°/" + n.min[i] + "°");
         wNow.setVisibility(View.VISIBLE);
         wDaysRow.setVisibility(View.VISIBLE);
         wMessage.setVisibility(View.GONE);

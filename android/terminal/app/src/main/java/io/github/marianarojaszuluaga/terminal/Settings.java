@@ -99,6 +99,9 @@ final class Settings {
     }
 
     static String qrHint(JSONObject c) {
+        if (!block(c, "pad")) {
+            return c.optBoolean("plural") ? "Escaneemos el QR para abrir el control." : "Escanea el QR para abrir el control.";
+        }
         return c.optBoolean("plural") ? "Escaneemos el QR con el teléfono y abramos la pestaña Pad."
                 : "Escanea el QR con el teléfono y abre la pestaña Pad.";
     }

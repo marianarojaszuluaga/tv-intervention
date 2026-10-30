@@ -64,15 +64,17 @@ final class Server {
 
     private final Host host;
     private final File notesDir, notesFile, configFile;
-    private final Live live = new Live();
+    private final Live live;
     private final List<OutputStream> streams = new CopyOnWriteArrayList<>();
     private JSONObject config;
     private ServerSocket socket;
     private ExecutorService pool;
     private Timer beat;
 
-    Server(Host host, File dir) {
+    /** {@code live} outlives the server: the drawing is still there when the screen opens again. */
+    Server(Host host, File dir, Live live) {
         this.host = host;
+        this.live = live;
         notesDir = new File(dir, "notas");
         notesFile = new File(dir, "notas.json");
         configFile = new File(dir, "config.json");
