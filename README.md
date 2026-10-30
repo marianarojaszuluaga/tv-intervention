@@ -10,6 +10,7 @@ y control remoto en el teléfono. **Un solo paquete para todas las TVs**: lo per
 | `service/` | TV | Servidor (Node 12, `com.mariana.retrotv.service`, puerto 8765): control del teléfono, pad en vivo, apps e íconos, Home → Terminal, ajustes (`/api/config`) |
 | `pc/telefono.html`, `pc/computador.html` | Teléfono / navegador | Páginas que sirve el servicio (se copian a `service/www` al empaquetar) |
 | `instalar-en-otra-tv.ps1` | Computador (Windows) | Instalador guiado. Ver **[GUIA-OTRA-TV.md](GUIA-OTRA-TV.md)** |
+| `docs/` | — | [TV-INSTALADA.md](docs/TV-INSTALADA.md): lo hecho en la primera TV · [CLEANYOURTV.md](docs/CLEANYOURTV.md): referencia del repo cleanyourtv |
 | `dev/simular-tv.js` | Computador | Prueba sin TV: `node dev/simular-tv.js` → app de la TV en :8766, control en :8765/control |
 
 ## Ajustes de cada TV
