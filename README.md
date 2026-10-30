@@ -12,6 +12,7 @@ y control remoto en el teléfono. **Un solo paquete para todas las TVs**: lo per
 | `app/altar.js`, `app/altar.css`, `pc/ofrenda.html` | TV / teléfono de los invitados | **Altar de muertos**: ver abajo |
 | `instalar-en-otra-tv.ps1` | Computador (Windows) | Instalador guiado. Ver **[GUIA-OTRA-TV.md](GUIA-OTRA-TV.md)** |
 | `docs/` | — | [TV-INSTALADA.md](docs/TV-INSTALADA.md): lo hecho en la primera TV · [CLEANYOURTV.md](docs/CLEANYOURTV.md): referencia del repo cleanyourtv |
+| `android/terminal/` | Android TV / Google TV | **Add-on para [cleanyourtv](https://github.com/Gathin23/cleanyourtv)** (va a `addons/terminal/`): la misma API y el mismo `telefono.html` (copiado en `app/src/main/assets/www/`), pantalla nativa. Ver su [README](android/terminal/README.md) |
 | `dev/simular-tv.js` | Computador | Prueba sin TV: `node dev/simular-tv.js` → app de la TV en :8766, control en :8765/control |
 
 ## Ajustes de cada TV
@@ -34,8 +35,9 @@ desde el teléfono → **Ajustes**. El servicio los da en `GET /api/config` y lo
 ## Lo que sabe hacer cada TV
 
 `GET /api/health` responde `can`: la lista de lo que la plataforma puede hacer (`dpad`, `volume`, `power`, `apps`,
-`inputs`, `home`, `lgHome`, `pad`, `notes`, `settings`). El teléfono esconde lo que no esté, así el mismo `telefono.html`
-sirve en webOS (todo) y en Android TV (sin flechas, sin apagar ni entradas; ver [PLAN-CLEANYOURTV.md](PLAN-CLEANYOURTV.md)).
+`inputs`, `home`, `lgHome`, `pad`, `notes`, `settings`, `altar`, `homeApps`). El teléfono esconde lo que no esté, así el
+mismo `telefono.html` sirve en webOS (todo) y en Android TV (sin flechas, sin apagar, sin entradas, sin altar ni apps en
+el inicio; ver [PLAN-CLEANYOURTV.md](PLAN-CLEANYOURTV.md)).
 El botón HOME manda `{"home": true}` y cada servidor abre su propia app. Para probar otra lista en el simulador:
 `TERMINAL_CAN=volume,apps,home,pad,notes,settings node dev/simular-tv.js`.
 
@@ -51,6 +53,8 @@ El pad manda colores del tema (`"1"`..`"4"` → `--ink1..4`), así los trazos se
 ```bash
 cp pc/telefono.html pc/computador.html pc/icon-180.png pc/ofrenda.html pc/heic2any.min.js service/www/
 ares-package app service -o dist
+# y la misma página para el add-on de Android:
+cp pc/telefono.html pc/computador.html pc/icon-180.png android/terminal/app/src/main/assets/www/
 ```
 
 En otra TV: `instalar-en-otra-tv.ps1` (Windows). Desde bash: `TV_KEY=<llave sin passphrase> sh instalar.sh <ip-tv>`.

@@ -19,7 +19,7 @@ var PORT = 8765;
 var WWW = path.join(__dirname, "www");
 // Lo que esta plataforma sabe hacer. El teléfono lo lee en /api/health y esconde lo demás,
 // así el mismo telefono.html sirve en webOS y en Android TV. TERMINAL_CAN lo cambia (solo para el simulador).
-var CAN = (process.env.TERMINAL_CAN || "dpad,volume,power,apps,inputs,home,lgHome,pad,notes,settings").split(",");
+var CAN = (process.env.TERMINAL_CAN || "dpad,volume,power,apps,inputs,home,lgHome,pad,notes,settings,altar,homeApps").split(",");
 var service = new Service(SERVICE_ID);
 
 // ---------- Datos: primera carpeta en la que se pueda escribir ----------

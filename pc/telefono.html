@@ -222,14 +222,14 @@ nav button.on{color:var(--accent)}
       <div class="group" id="s-blocks">
         <label class="row"><span>Clima</span><input type="checkbox" class="switch" data-block="weather"></label>
         <label class="row" data-can="inputs"><span>Entradas (HDMI, TV)</span><input type="checkbox" class="switch" data-block="inputs"></label>
-        <label class="row"><span>Apps</span><input type="checkbox" class="switch" data-block="apps"></label>
+        <label class="row" data-can="homeApps"><span>Apps</span><input type="checkbox" class="switch" data-block="apps"></label>
         <label class="row"><span>Pad en vivo</span><input type="checkbox" class="switch" data-block="pad"></label>
         <label class="row"><span>QR al control</span><input type="checkbox" class="switch" data-block="qr"></label>
-        <label class="row"><span>Altar de muertos<small>Los invitados suben fotos con el QR del altar</small></span><input type="checkbox" class="switch" data-block="altar"></label>
+        <label class="row" data-can="altar"><span>Altar de muertos<small>Los invitados suben fotos con el QR del altar</small></span><input type="checkbox" class="switch" data-block="altar"></label>
       </div>
 
-      <div class="label">Apps en el inicio</div>
-      <div class="group" id="s-apps"><div class="row"><span class="empty">Cargando apps de la TV…</span></div></div>
+      <div class="label" data-can="homeApps">Apps en el inicio</div>
+      <div class="group" id="s-apps" data-can="homeApps"><div class="row"><span class="empty">Cargando apps de la TV…</span></div></div>
 
       <div class="saved" id="s-saved">Cada cambio se guarda en la TV y se ve al instante.</div>
     </div>

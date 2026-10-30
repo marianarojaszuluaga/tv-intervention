@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app icon: the same ">_" prompt, square. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FF120A18" android:pathData="M0,0h108v108h-108z" />
+    <path android:strokeColor="#FF3CF2A0" android:strokeWidth="8" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M30,38L50,54L30,70" />
+    <path android:fillColor="#FFF2B33D" android:pathData="M56,66h26v7h-26z" />
+</vector>

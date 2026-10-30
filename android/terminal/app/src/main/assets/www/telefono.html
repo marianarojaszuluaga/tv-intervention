@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#120A18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Control TV">
+<link rel="apple-touch-icon" href="/icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<title>Control TV</title>
+<script>
+// El tema de la TV, antes de pintar (el último que vimos; luego llega el del servidor).
+try { document.documentElement.setAttribute('data-theme', JSON.parse(localStorage.getItem('settings') || '{}').theme || 'terminal'); } catch (e) {}
+</script>
+<style>
+/* Los mismos temas de la TV (app/style.css). Todo el texto cumple AA (4.5:1). */
+:root,[data-theme=terminal]{--bg:#120A18;--surface:#1E1226;--surface-2:#2A1934;--line:#3A1E3A;--accent:#3CF2A0;--label:#3DB083;--accent-2:#1FC9B2;--danger:#FF5C7A;--text:#D8F5E6;--dim:#9DC2B0;--nav:rgba(30,18,38,.92);--ink1:#3CF2A0;--ink2:#F2B33D;--ink3:#FF5C7A;--ink4:#D8F5E6;--tab:64px;color-scheme:dark}
+[data-theme=ambar]{--bg:#140D04;--surface:#20160A;--surface-2:#2C1F0E;--line:#45311A;--accent:#FFB000;--label:#D69A2E;--accent-2:#FFD27A;--danger:#FF7A5C;--text:#FFE6BF;--dim:#CDAA78;--nav:rgba(32,22,10,.92);--ink1:#FFB000;--ink2:#FFE6BF;--ink3:#FF7A5C;--ink4:#6FD3FF}
+[data-theme=synthwave]{--bg:#0B0E29;--surface:#161A40;--surface-2:#20255A;--line:#2E3370;--accent:#FF5FD2;--label:#E07BDD;--accent-2:#3EE6FF;--danger:#FF7A88;--text:#F0EEFF;--dim:#ABB0DD;--nav:rgba(22,26,64,.92);--ink1:#FF5FD2;--ink2:#3EE6FF;--ink3:#FFD45E;--ink4:#F0EEFF}
+[data-theme=minimal]{--bg:#F5F5F7;--surface:#FFFFFF;--surface-2:#E8E8ED;--line:#D2D2D7;--accent:#0066CC;--label:#6A6A70;--accent-2:#1E8E3E;--danger:#C4002B;--text:#1D1D1F;--dim:#5F5F65;--nav:rgba(255,255,255,.92);--ink1:#1D1D1F;--ink2:#0066CC;--ink3:#C4002B;--ink4:#1E8E3E;color-scheme:light}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:17px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+body{position:fixed;inset:0;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;background:none;border:none;touch-action:manipulation;cursor:pointer}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+
+/* ---------- Cabecera ---------- */
+header{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 10px) 20px 10px}
+.title{font-size:22px;font-weight:600;color:var(--accent)}
+.status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
+.dot{width:8px;height:8px;border-radius:4px;background:var(--line)}
+.status.ok .dot{background:var(--accent-2)}.status.bad{color:var(--danger)}.status.bad .dot{background:var(--danger)}
+.power{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;color:var(--dim)}
+.power.armed{background:var(--danger);color:var(--bg)}
+
+main{flex:1;min-height:0;position:relative}
+.tab{position:absolute;inset:0;display:none;flex-direction:column;padding:0 20px 16px}
+.tab.on{display:flex}
+
+/* ---------- Control: superficie táctil como el control del Apple TV ---------- */
+.surface{position:relative;flex:1;min-height:240px;border-radius:28px;background:var(--surface);border:1px solid var(--line);touch-action:none;overflow:hidden}
+.surface .hint{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:13px;color:var(--dim);pointer-events:none}
+.chev{position:absolute;color:var(--label);pointer-events:none;transition:color .08s}
+.chev.up{top:14px;left:50%;transform:translateX(-50%)}.chev.down{bottom:36px;left:50%;transform:translateX(-50%)}
+.chev.left{left:16px;top:50%;transform:translateY(-50%)}.chev.right{right:16px;top:50%;transform:translateY(-50%)}
+.chev.hit{color:var(--accent)}
+.okring{position:absolute;left:50%;top:50%;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:42px;border:1px solid var(--label);display:grid;place-items:center;font-weight:600;color:var(--accent);pointer-events:none;transition:background .08s,color .08s}
+.okring.hit{background:var(--accent);color:var(--bg)}
+.touch{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:28px;background:var(--accent);opacity:.18;pointer-events:none;display:none}
+
+.keys{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:12px;margin-top:14px}
+.key{height:60px;border-radius:18px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px}
+.key svg{flex:none}
+.key.down,.rocker button.down{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.rocker{display:grid;grid-template-columns:1fr 1fr 1fr;margin-top:12px;height:60px;border-radius:18px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.rocker button{display:flex;align-items:center;justify-content:center;font-size:24px}
+.rocker button+button{border-left:1px solid var(--line)}
+
+/* ---------- Apps ---------- */
+.scroller{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:0 20px 16px}
+.label{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--label);margin:6px 0 10px}
+.inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-bottom:22px}
+.input{height:52px;border-radius:16px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px}
+.input .dot{background:var(--line)}.input.on .dot{background:var(--accent-2)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 10px}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.app .ic{width:64px;height:64px;border-radius:15px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
+.app img{width:46px;height:46px;object-fit:contain}
+.app .ic span{font:600 26px ui-monospace,Menlo,monospace;color:var(--accent)}
+.app .nm{font-size:12px;color:var(--dim);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app.down .ic,.input.down{border-color:var(--accent);background:var(--surface-2)}
+.empty{color:var(--dim);font-size:15px;padding:24px 0}
+
+/* ---------- Notas ---------- */
+.canvas-wrap{flex:1;min-height:0;border-radius:24px;border:1px solid var(--line);overflow:hidden;background:var(--bg);position:relative}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.canvas-wrap .hint{position:absolute;left:0;right:0;top:45%;text-align:center;color:var(--dim);font-size:15px;pointer-events:none}
+.tools{display:flex;align-items:center;gap:10px;margin-top:12px}
+.sw{width:44px;height:44px;border-radius:22px;display:grid;place-items:center}
+.sw i{width:28px;height:28px;border-radius:14px;display:block;box-shadow:0 0 0 2px var(--bg)}
+.sw.sel{box-shadow:0 0 0 2px var(--text) inset}
+.grow{flex:1}
+.icon-btn{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;color:var(--text);background:var(--surface);border:1px solid var(--line)}
+.primary{margin-top:12px;height:56px;border-radius:18px;background:var(--accent);color:var(--bg);font-weight:600;font-size:17px}
+.primary:disabled{opacity:.5}
+
+/* ---------- Barra de pestañas ---------- */
+/* ---------- Ajustes: lista agrupada como en iOS; cada cambio se guarda y se ve en la TV al instante ---------- */
+.group{background:var(--surface);border:1px solid var(--line);border-radius:16px;margin-bottom:22px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 16px}
+.row+.row{border-top:1px solid var(--line)}
+.row>span{flex:1;min-width:0}
+.row small{display:block;font-size:13px;color:var(--dim)}
+.row input[type=text]{flex:1.4;min-width:0;height:40px;border:none;background:none;color:var(--text);font:inherit;text-align:right;-webkit-user-select:text;user-select:text}
+.row input[type=text]::placeholder{color:var(--dim)}
+.row input:focus{outline:none}
+select{font:inherit;color:var(--accent);background:none;border:none;text-align:right;height:40px;max-width:60%}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:6px 16px 12px;border-radius:12px;background:var(--bg)}
+.seg button{height:44px;border-radius:9px;font-size:15px;color:var(--dim)}
+.seg button.on{background:var(--surface-2);color:var(--text);font-weight:600}
+.switch{appearance:none;-webkit-appearance:none;flex:none;width:51px;height:31px;border-radius:16px;background:var(--line);position:relative;transition:background .2s;cursor:pointer}
+.switch::after{content:"";position:absolute;left:2px;top:2px;width:27px;height:27px;border-radius:14px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.switch:checked{background:var(--accent)}
+.switch:checked::after{transform:translateX(20px)}
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
+.theme{border-radius:16px;padding:12px;text-align:left;border:2px solid var(--line);min-height:88px;display:flex;flex-direction:column;justify-content:space-between}
+.theme.on{border-color:var(--accent)}
+.theme b{font:600 15px ui-monospace,Menlo,monospace}
+.theme i{display:flex;gap:6px}
+.theme i span{width:16px;height:16px;border-radius:8px}
+.saved{text-align:center;font-size:13px;color:var(--dim);padding:4px 0 12px}
+
+.nocan{display:none!important}
+.note{padding:16px;border-radius:18px;background:var(--surface);border:1px solid var(--line);color:var(--dim);font-size:15px;line-height:1.45;margin-bottom:14px}
+nav{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-top:1px solid var(--line);background:var(--nav);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom)}
+nav button{height:var(--tab);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--dim)}
+nav button.on{color:var(--accent)}
+
+.toast{position:fixed;left:20px;right:20px;bottom:calc(var(--tab) + env(safe-area-inset-bottom) + 12px);padding:12px 16px;border-radius:14px;background:var(--surface-2);border:1px solid var(--label);text-align:center;font-size:15px;opacity:0;transition:opacity .15s;pointer-events:none}
+.toast.on{opacity:1}.toast.bad{border-color:var(--danger);color:var(--danger)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="title mono" id="hello">&gt;_ hola</div>
+    <div class="status" id="status"><span class="dot"></span><span id="status-text">Conectando…</span></div>
+  </div>
+  <button class="power" id="power" data-can="power" aria-label="Apagar la TV">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
+  </button>
+</header>
+
+<main>
+  <section class="tab on" id="t-control">
+    <div class="note nocan" data-can-not="dpad">Esta TV no deja mover la selección desde el teléfono: usa su control remoto. Desde aquí sí puedes abrir apps, cambiar el volumen y dibujar en el pad.</div>
+    <div class="surface" id="surface" data-can="dpad" aria-label="Superficie táctil: desliza para moverte, toca para OK">
+      <svg class="chev up" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+      <svg class="chev down" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      <svg class="chev left" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+      <svg class="chev right" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      <div class="okring mono" id="okring">OK</div>
+      <div class="touch" id="touch"></div>
+      <div class="hint">Desliza para moverte · toca para OK</div>
+    </div>
+
+    <div class="keys">
+      <button class="key" data-b="BACK" data-can="dpad"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Atrás</button>
+      <button class="key" id="home" data-can="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9H4z"/></svg>HOME</button>
+    </div>
+    <div class="rocker" data-can="volume">
+      <button data-b="VOLUMEDOWN" aria-label="Bajar volumen">−</button>
+      <button data-b="MUTE" aria-label="Silenciar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l4 6M21 9l-4 6"/></svg></button>
+      <button data-b="VOLUMEUP" aria-label="Subir volumen">+</button>
+    </div>
+  </section>
+
+  <section class="tab" id="t-apps">
+    <div class="scroller">
+      <div class="label" data-can="inputs">Entradas</div>
+      <div class="inputs" id="inputs" data-can="inputs"></div>
+      <div class="label">Apps</div>
+      <div class="grid" id="apps"><div class="empty">Cargando apps de la TV…</div></div>
+    </div>
+  </section>
+
+  <section class="tab" id="t-notes">
+    <div class="canvas-wrap"><canvas id="pad"></canvas><div class="hint" id="pad-hint">Dibuja con el dedo: se ve en vivo en la TV</div></div>
+    <div class="tools">
+      <!-- Colores del tema (--ink1..4): la TV los pinta con los de su tema actual. -->
+      <button class="sw sel" data-c="1" aria-label="Color 1"><i style="background:var(--ink1)"></i></button>
+      <button class="sw" data-c="2" aria-label="Color 2"><i style="background:var(--ink2)"></i></button>
+      <button class="sw" data-c="3" aria-label="Color 3"><i style="background:var(--ink3)"></i></button>
+      <button class="sw" data-c="4" aria-label="Color 4"><i style="background:var(--ink4)"></i></button>
+      <span class="grow"></span>
+      <button class="icon-btn" id="undo" aria-label="Deshacer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+      <button class="icon-btn" id="clear" aria-label="Borrar todo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+    </div>
+    <button class="primary" id="send-note">Guardar dibujo</button>
+  </section>
+
+  <section class="tab" id="t-settings">
+    <div class="scroller">
+      <div class="label">Saludo</div>
+      <div class="group">
+        <label class="row"><span>Nombre</span><input type="text" id="s-name" maxlength="24" placeholder="Sin nombre" autocomplete="off" autocapitalize="words"></label>
+        <div class="row"><span>Trato<small id="s-plural-ex"></small></span></div>
+        <div class="seg" id="s-plural">
+          <button data-v="1">Plural</button>
+          <button data-v="0">Singular</button>
+        </div>
+        <label class="row"><span>Saludo</span>
+          <select id="s-greeting">
+            <option value="auto">Según la hora</option>
+            <option value="dias">buenos días</option>
+            <option value="tardes">buenas tardes</option>
+            <option value="noches">buenas noches</option>
+            <option value="ola">ola ke ase?</option>
+          </select>
+        </label>
+        <label class="row" id="s-ola-row"><span>“ola ke ase?” de vez en cuando<small>Una hora de cada cuatro</small></span><input type="checkbox" class="switch" id="s-ola"></label>
+      </div>
+
+      <div class="label">Clima</div>
+      <div class="group">
+        <label class="row"><span>Ciudad</span><input type="text" id="s-city" maxlength="60" placeholder="Ej.: Medellín" autocomplete="off" autocapitalize="words"></label>
+      </div>
+
+      <div class="label">Tema</div>
+      <div class="themes" id="s-themes">
+        <button class="theme" data-v="terminal" style="background:#120A18;color:#D8F5E6"><b style="color:#3CF2A0">&gt; Terminal</b><i><span style="background:#3CF2A0"></span><span style="background:#F2B33D"></span><span style="background:#1FC9B2"></span></i></button>
+        <button class="theme" data-v="ambar" style="background:#140D04;color:#FFE6BF"><b style="color:#FFB000">&gt; Ámbar CRT</b><i><span style="background:#FFB000"></span><span style="background:#FFD27A"></span><span style="background:#FFE6BF"></span></i></button>
+        <button class="theme" data-v="synthwave" style="background:#0B0E29;color:#F0EEFF"><b style="color:#FF5FD2">&gt; Synthwave</b><i><span style="background:#FF5FD2"></span><span style="background:#3EE6FF"></span><span style="background:#F0EEFF"></span></i></button>
+        <button class="theme" data-v="minimal" style="background:#F5F5F7;color:#1D1D1F"><b style="color:#1D1D1F">Minimal claro</b><i><span style="background:#1D1D1F"></span><span style="background:#0066CC"></span><span style="background:#D2D2D7"></span></i></button>
+      </div>
+
+      <div class="label">En el inicio de la TV</div>
+      <div class="group" id="s-blocks">
+        <label class="row"><span>Clima</span><input type="checkbox" class="switch" data-block="weather"></label>
+        <label class="row" data-can="inputs"><span>Entradas (HDMI, TV)</span><input type="checkbox" class="switch" data-block="inputs"></label>
+        <label class="row" data-can="homeApps"><span>Apps</span><input type="checkbox" class="switch" data-block="apps"></label>
+        <label class="row"><span>Pad en vivo</span><input type="checkbox" class="switch" data-block="pad"></label>
+        <label class="row"><span>QR al control</span><input type="checkbox" class="switch" data-block="qr"></label>
+        <label class="row" data-can="altar"><span>Altar de muertos<small>Los invitados suben fotos con el QR del altar</small></span><input type="checkbox" class="switch" data-block="altar"></label>
+      </div>
+
+      <div class="label" data-can="homeApps">Apps en el inicio</div>
+      <div class="group" id="s-apps" data-can="homeApps"><div class="row"><span class="empty">Cargando apps de la TV…</span></div></div>
+
+      <div class="saved" id="s-saved">Cada cambio se guarda en la TV y se ve al instante.</div>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button class="on" data-tab="t-control"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="4"/><circle cx="12" cy="8" r="2.5"/></svg>Control</button>
+  <button data-tab="t-apps" data-can="apps"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Apps</button>
+  <button data-tab="t-notes" data-can="pad"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg>Pad</button>
+  <button data-tab="t-settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Ajustes</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var toastT;
+function toast(t, bad) { var e = $('toast'); e.textContent = t; e.className = 'toast on' + (bad ? ' bad' : ''); clearTimeout(toastT); toastT = setTimeout(function () { e.className = 'toast'; }, 2600); }
+function setStatus(text, kind) { $('status-text').textContent = text; $('status').className = 'status ' + (kind || ''); }
+
+function api(path, body, ms) {
+  var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, ms || 8000);
+  return fetch(path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, signal: ctl.signal })
+    .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Error'); return d; }); })
+    .catch(function (e) { throw e.name === 'AbortError' ? new Error('La TV no responde') : e; })
+    .finally(function () { clearTimeout(t); });
+}
+
+// Los toques van en fila: en el mismo orden en que se hicieron, aunque se toque rápido.
+var queue = Promise.resolve();
+function remote(body) {
+  queue = queue.then(function () {
+    return api('/api/remote', body).then(function () { setStatus('TV conectada', 'ok'); })
+      .catch(function (e) { setStatus(e.message, 'bad'); toast(e.message, true); });
+  });
+}
+
+// Respuesta visual inmediata al tocar (iOS no vibra desde la web).
+function pressable(el, fn) {
+  el.addEventListener('pointerdown', function () { el.classList.add('down'); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (t) { el.addEventListener(t, function () { el.classList.remove('down'); }); });
+  el.addEventListener('click', fn);
+}
+
+// ---------- Pestañas ----------
+document.querySelectorAll('nav button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('nav button, .tab').forEach(function (e) { e.classList.remove('on'); });
+    b.classList.add('on'); $(b.dataset.tab).classList.add('on');
+    if (b.dataset.tab === 't-notes') sizePad();
+  });
+});
+
+// ---------- Superficie táctil ----------
+var surface = $('surface'), STEP = 44, EDGE = 0.24;
+var g = null;
+function flash(sel) { var e = surface.querySelector(sel) || $(sel); if (!e) return; e.classList.add('hit'); setTimeout(function () { e.classList.remove('hit'); }, 140); }
+var DIR = { UP: '.chev.up', DOWN: '.chev.down', LEFT: '.chev.left', RIGHT: '.chev.right' };
+function arrow(name) { remote({ button: name }); flash(DIR[name]); }
+function showTouch(x, y) { var t = $('touch'); t.style.left = x + 'px'; t.style.top = y + 'px'; t.style.display = 'block'; }
+
+surface.addEventListener('pointerdown', function (e) {
+  surface.setPointerCapture(e.pointerId);
+  var r = surface.getBoundingClientRect();
+  g = { x0: e.clientX, y0: e.clientY, ax: e.clientX, ay: e.clientY, t: Date.now(), moved: false, r: r };
+  showTouch(e.clientX - r.left, e.clientY - r.top);
+});
+surface.addEventListener('pointermove', function (e) {
+  if (!g) return;
+  showTouch(e.clientX - g.r.left, e.clientY - g.r.top);
+  var dx = e.clientX - g.ax, dy = e.clientY - g.ay;
+  // Cada STEP px de recorrido es un paso: deslizar largo avanza varias casillas.
+  if (Math.abs(dx) >= STEP || Math.abs(dy) >= STEP) {
+    g.moved = true;
+    if (Math.abs(dx) > Math.abs(dy)) { arrow(dx > 0 ? 'RIGHT' : 'LEFT'); g.ax += dx > 0 ? STEP : -STEP; g.ay = e.clientY; }
+    else { arrow(dy > 0 ? 'DOWN' : 'UP'); g.ay += dy > 0 ? STEP : -STEP; g.ax = e.clientX; }
+  }
+});
+function endGesture(e) {
+  if (!g) return;
+  $('touch').style.display = 'none';
+  var dist = Math.hypot(e.clientX - g.x0, e.clientY - g.y0);
+  if (!g.moved && dist < 12 && Date.now() - g.t < 500) {
+    // Toque: en los bordes es una flecha (como un D-pad); en el centro es OK.
+    var fx = (e.clientX - g.r.left) / g.r.width, fy = (e.clientY - g.r.top) / g.r.height;
+    if (fy < EDGE) arrow('UP'); else if (fy > 1 - EDGE) arrow('DOWN');
+    else if (fx < EDGE) arrow('LEFT'); else if (fx > 1 - EDGE) arrow('RIGHT');
+    else { remote({ button: 'ENTER' }); flash('#okring'); }
+  }
+  g = null;
+}
+surface.addEventListener('pointerup', endGesture);
+surface.addEventListener('pointercancel', function () { $('touch').style.display = 'none'; g = null; });
+
+document.querySelectorAll('[data-b]').forEach(function (b) { pressable(b, function () { remote({ button: b.dataset.b }); }); });
+pressable($('home'), function () { remote({ home: true }); });
+
+// ---------- Lo que esta TV sabe hacer ----------
+// El servidor manda can: [...] en /api/health (webOS y Android no pueden lo mismo).
+// Sin respuesta, o con un servidor viejo sin can, no se esconde nada.
+function applyCan(can) {
+  document.querySelectorAll('[data-can]').forEach(function (e) { e.classList.toggle('nocan', can.indexOf(e.dataset.can) < 0); });
+  document.querySelectorAll('[data-can-not]').forEach(function (e) { e.classList.toggle('nocan', can.indexOf(e.dataset.canNot) >= 0); });
+  var on = document.querySelector('nav button.on');
+  if (on && on.classList.contains('nocan')) document.querySelector('nav button:not(.nocan)').click();
+}
+function loadCan() {
+  api('/api/health').then(function (d) { if (Array.isArray(d.can)) applyCan(d.can); }).catch(function () { setTimeout(loadCan, 5000); });
+}
+loadCan();
+
+// Apagar: dos toques, para no apagarla sin querer.
+var armT;
+$('power').addEventListener('click', function () {
+  var p = $('power');
+  if (!p.classList.contains('armed')) { p.classList.add('armed'); toast(W().power); armT = setTimeout(function () { p.classList.remove('armed'); }, 3000); return; }
+  clearTimeout(armT); p.classList.remove('armed'); remote({ power: 'off' });
+});
+
+// ---------- Apps y entradas ----------
+function loadTV() {
+  api('/api/tv/apps', null, 15000).then(function (d) {
+    setStatus('TV conectada', 'ok');
+    $('inputs').innerHTML = ''; $('apps').innerHTML = '';
+    d.inputs.forEach(function (i) {
+      var b = document.createElement('button'); b.className = 'input' + (i.connected ? ' on' : '');
+      b.innerHTML = '<span class="dot"></span><span></span>'; b.lastChild.textContent = i.title;
+      pressable(b, function () { remote({ launch: i.id }); toast(W().go + i.title); });
+      $('inputs').appendChild(b);
+    });
+    d.apps.forEach(function (a) {
+      if (/hdmi|livetv|externalinput/.test(a.id)) return;
+      var b = document.createElement('button'); b.className = 'app';
+      b.innerHTML = '<div class="ic"></div><div class="nm"></div>';
+      b.lastChild.textContent = a.title;
+      var ic = b.firstChild;
+      if (a.icon) { var img = new Image(); img.alt = ''; img.src = a.icon; img.onerror = function () { ic.innerHTML = '<span></span>'; ic.firstChild.textContent = a.title.charAt(0); }; ic.appendChild(img); }
+      else { ic.innerHTML = '<span></span>'; ic.firstChild.textContent = a.title.charAt(0); }
+      pressable(b, function () { remote({ launch: a.id }); toast(W().go + a.title); });
+      $('apps').appendChild(b);
+    });
+    tvApps = d.apps.filter(function (a) { return !/hdmi|livetv|externalinput|com\.mariana\.retrotv/.test(a.id); });
+    renderHiddenApps();
+  }).catch(function (e) {
+    setStatus(e.message, 'bad');
+    $('apps').innerHTML = '<div class="empty">No pude leer las apps: ' + e.message.replace(/</g, '&lt;') + '. Reintento en unos segundos.</div>';
+    setTimeout(loadTV, 8000);
+  });
+}
+loadTV();
+
+// ---------- Ajustes de la TV ----------
+// Viven en la TV (/api/config). Cada cambio se manda al momento y la TV lo aplica en vivo.
+var cfg = { name: '', plural: false, greeting: 'auto', olaKeAse: true, city: '', theme: 'terminal', hidden: [], blocks: {} };
+try { cfg = JSON.parse(localStorage.getItem('settings') || 'null') || cfg; } catch (e) {}
+var tvApps = null;
+
+// Plural ("¿qué vemos?") o singular ("¿qué ves?").
+function W() {
+  var n = cfg.name ? ', ' + cfg.name : '';
+  return cfg.plural ? {
+    power: '¿Apagamos la TV? Toca otra vez', go: 'Vamos a ', saved: 'Guardamos el dibujo' + n, empty: 'Primero dibujemos algo',
+    hint: 'Dibujemos con el dedo: se ve en vivo en la TV', example: '“¿qué vemos hoy?” · “nuestras entradas”'
+  } : {
+    power: '¿Apagar la TV? Toca otra vez', go: 'Abriendo ', saved: 'Dibujo guardado' + n, empty: 'Primero dibuja algo',
+    hint: 'Dibuja con el dedo: se ve en vivo en la TV', example: '“¿qué ves hoy?” · “tus entradas”'
+  };
+}
+var GREET = { dias: 'buenos días', tardes: 'buenas tardes', noches: 'buenas noches', ola: 'ola ke ase' };
+function greeting() {
+  var d = new Date(), h = d.getHours(), g = cfg.greeting;
+  if (!GREET[g]) g = cfg.olaKeAse && (h + d.getDate()) % 4 === 0 ? 'ola' : h < 12 ? 'dias' : h < 19 ? 'tardes' : 'noches';
+  return GREET[g] + (cfg.name ? ', ' + cfg.name : '') + (g === 'ola' ? '?' : '');
+}
+
+function applyCfg(c, fromServer) {
+  cfg = c;
+  try { localStorage.setItem('settings', JSON.stringify(c)); } catch (e) {}
+  document.documentElement.setAttribute('data-theme', c.theme);
+  document.querySelector('meta[name=theme-color]').content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  $('hello').textContent = '>_ ' + greeting();
+  document.title = c.name ? 'Control de ' + c.name : 'Control TV';
+  $('pad-hint').textContent = W().hint;
+  $('s-plural-ex').textContent = W().example;
+  // Los campos de texto solo se rellenan desde el servidor y si no se están editando.
+  if (fromServer) {
+    if (document.activeElement !== $('s-name')) $('s-name').value = c.name;
+    if (document.activeElement !== $('s-city')) $('s-city').value = c.city;
+  }
+  document.querySelectorAll('#s-plural button').forEach(function (b) { b.classList.toggle('on', (b.dataset.v === '1') === !!c.plural); });
+  $('s-greeting').value = c.greeting;
+  $('s-ola').checked = !!c.olaKeAse;
+  $('s-ola-row').style.display = c.greeting === 'auto' ? '' : 'none';
+  document.querySelectorAll('#s-themes .theme').forEach(function (b) { b.classList.toggle('on', b.dataset.v === c.theme); });
+  document.querySelectorAll('[data-block]').forEach(function (i) { i.checked = c.blocks[i.dataset.block] !== false; });
+  renderHiddenApps();
+  if (pad) redraw();
+}
+
+// Se manda solo lo que cambió; la respuesta trae los ajustes completos ya validados por la TV.
+var saveQ = Promise.resolve();
+function save(part) {
+  var local = JSON.parse(JSON.stringify(cfg));
+  for (var k in part) local[k] = part[k];
+  applyCfg(local);
+  saveQ = saveQ.then(function () {
+    return api('/api/config', part).then(function (r) {
+      $('s-saved').textContent = 'Guardado · ya se ve en la TV';
+      applyCfg(r.config, false);
+    }).catch(function (e) { toast('No se guardó: ' + e.message, true); });
+  });
+}
+function loadCfg() {
+  api('/api/config').then(function (r) { applyCfg(r.config, true); }).catch(function () { setTimeout(loadCfg, 5000); });
+}
+
+var typing = {};
+function textSetting(id, key) {
+  $(id).addEventListener('input', function () {
+    var v = $(id).value;
+    clearTimeout(typing[key]);
+    typing[key] = setTimeout(function () { var p = {}; p[key] = v.trim(); save(p); }, 500);
+  });
+  $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') $(id).blur(); });
+}
+textSetting('s-name', 'name');
+textSetting('s-city', 'city');
+document.querySelectorAll('#s-plural button').forEach(function (b) {
+  b.addEventListener('click', function () { save({ plural: b.dataset.v === '1' }); });
+});
+$('s-greeting').addEventListener('change', function () { save({ greeting: this.value }); });
+$('s-ola').addEventListener('change', function () { save({ olaKeAse: this.checked }); });
+document.querySelectorAll('#s-themes .theme').forEach(function (b) {
+  b.addEventListener('click', function () { save({ theme: b.dataset.v }); });
+});
+document.querySelectorAll('[data-block]').forEach(function (i) {
+  i.addEventListener('change', function () { var bl = JSON.parse(JSON.stringify(cfg.blocks)); bl[i.dataset.block] = i.checked; save({ blocks: bl }); });
+});
+
+// Apps del inicio: encendida = se ve en la TV. Se ocultan por id (y se respetan las ocultas por nombre).
+function renderHiddenApps() {
+  if (!tvApps) return;
+  var box = $('s-apps'), hidden = cfg.hidden || [];
+  box.innerHTML = '';
+  tvApps.forEach(function (a) {
+    var row = document.createElement('label'); row.className = 'row';
+    row.innerHTML = '<span></span><input type="checkbox" class="switch">';
+    row.firstChild.textContent = a.title;
+    var sw = row.lastChild;
+    sw.checked = hidden.indexOf(a.id) < 0 && hidden.indexOf(a.title) < 0;
+    sw.addEventListener('change', function () {
+      var h = (cfg.hidden || []).filter(function (x) { return x !== a.id && x !== a.title; });
+      if (!sw.checked) h.push(a.id);
+      save({ hidden: h });
+    });
+    box.appendChild(row);
+  });
+}
+
+applyCfg(withDefaults(cfg), true);
+loadCfg();
+function withDefaults(c) {
+  var d = { name: '', plural: false, greeting: 'auto', olaKeAse: true, city: '', theme: 'terminal', hidden: [], blocks: {} };
+  for (var k in d) if (!(k in c)) c[k] = d[k];
+  return c;
+}
+document.addEventListener('visibilitychange', function () { if (!document.hidden) loadCfg(); });
+
+// ---------- Pad en vivo ----------
+// Cada trazo viaja a la TV mientras se dibuja, en coordenadas relativas al ancho (0..1).
+var pad = $('pad'), ctx = pad.getContext('2d'), color = '1', strokes = [], cur = null;
+// Colores del tema: "1".."4" → --ink1..4 (un color suelto, de versiones anteriores, se respeta).
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function ink(c) { return /^[1-4]$/.test(c) ? css('--ink' + c) : c; }
+var outbox = [], sending = false;
+function send(op) {
+  // Los puntos seguidos del mismo trazo se juntan en un solo envío.
+  var last = outbox[outbox.length - 1];
+  if (op.t === 'pts' && last && last.t === 'pts') last.p = last.p.concat(op.p); else outbox.push(op);
+}
+setInterval(function () {
+  if (sending || !outbox.length) return;
+  var ops = outbox; outbox = []; sending = true;
+  api('/api/live', { ops: ops }, 6000).catch(function (e) { toast('La TV no recibe el dibujo: ' + e.message, true); })
+    .then(function () { sending = false; });
+}, 40);
+
+function sizePad() {
+  var r = window.devicePixelRatio || 1, w = pad.clientWidth, h = pad.clientHeight;
+  if (!w || !h || (pad.width === Math.round(w * r) && pad.height === Math.round(h * r))) return;
+  pad.width = Math.round(w * r); pad.height = Math.round(h * r);
+  send({ t: 'aspect', a: h / w });
+  redraw();
+}
+function lw() { return Math.max(2, pad.clientWidth * 0.011); }
+function redraw() {
+  var r = window.devicePixelRatio || 1, w = pad.clientWidth;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = css('--bg'); ctx.fillRect(0, 0, pad.width, pad.height);
+  ctx.setTransform(r, 0, 0, r, 0, 0); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  strokes.forEach(function (s) {
+    ctx.strokeStyle = ink(s.c); ctx.lineWidth = lw(); ctx.beginPath();
+    s.p.forEach(function (p, i) { if (i) ctx.lineTo(p[0] * w, p[1] * w); else ctx.moveTo(p[0] * w, p[1] * w); });
+    if (s.p.length === 1) ctx.lineTo(s.p[0][0] * w + 0.1, s.p[0][1] * w);
+    ctx.stroke();
+  });
+  $('pad-hint').style.display = strokes.length ? 'none' : '';
+}
+function pt(e) { var b = pad.getBoundingClientRect(); return [+((e.clientX - b.left) / b.width).toFixed(4), +((e.clientY - b.top) / b.width).toFixed(4)]; }
+pad.addEventListener('pointerdown', function (e) {
+  pad.setPointerCapture(e.pointerId);
+  var p = pt(e); cur = { c: color, p: [p] }; strokes.push(cur);
+  send({ t: 'start', c: color, p: [p] });
+  redraw();
+});
+pad.addEventListener('pointermove', function (e) {
+  if (!cur) return;
+  var w = pad.clientWidth, evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e], added = [];
+  evs.forEach(function (ev) {
+    var p = pt(ev), q = cur.p[cur.p.length - 1];
+    cur.p.push(p); added.push(p);
+    ctx.strokeStyle = ink(cur.c); ctx.lineWidth = lw(); ctx.beginPath(); ctx.moveTo(q[0] * w, q[1] * w); ctx.lineTo(p[0] * w, p[1] * w); ctx.stroke();
+  });
+  send({ t: 'pts', p: added });
+});
+['pointerup', 'pointercancel'].forEach(function (t) { pad.addEventListener(t, function () { cur = null; }); });
+document.querySelectorAll('.sw').forEach(function (b) {
+  b.addEventListener('click', function () { document.querySelectorAll('.sw').forEach(function (x) { x.classList.remove('sel'); }); b.classList.add('sel'); color = b.dataset.c; });
+});
+$('undo').addEventListener('click', function () { if (!strokes.length) return; strokes.pop(); send({ t: 'undo' }); redraw(); });
+$('clear').addEventListener('click', function () { strokes = []; send({ t: 'clear' }); redraw(); });
+$('send-note').addEventListener('click', function () {
+  if (!strokes.length) { toast(W().empty, true); return; }
+  var btn = this; btn.disabled = true; btn.textContent = 'Guardando…';
+  api('/api/notes', { image: pad.toDataURL('image/png') }, 20000)
+    .then(function () { toast(W().saved); })
+    .catch(function (e) { toast(e.message, true); })
+    .then(function () { btn.disabled = false; btn.textContent = 'Guardar dibujo'; });
+});
+window.addEventListener('resize', function () { if ($('t-notes').classList.contains('on')) sizePad(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The TV banner: a terminal prompt ">_" on the Terminal theme's night purple. Drawn for this add-on, no third-party art. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp" android:height="180dp"
+    android:viewportWidth="320" android:viewportHeight="180">
+    <path android:fillColor="#FF120A18" android:pathData="M0,0h320v180h-320z" />
+    <path android:fillColor="#FF1E1226" android:pathData="M24,24h272v132h-272z" />
+    <path android:strokeColor="#FF3CF2A0" android:strokeWidth="12" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M110,62L146,90L110,118" />
+    <path android:fillColor="#FFF2B33D" android:pathData="M160,110h52v10h-52z" />
+</vector>
