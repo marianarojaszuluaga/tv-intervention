@@ -1,0 +1,10 @@
+{
+  "id": "com.mariana.retrotv.service",
+  "description": "Servidor de Terminal: control del iPhone, pad en vivo y botón Home",
+  "services": [
+    {
+      "name": "com.mariana.retrotv.service",
+      "description": "Servidor de Terminal"
+    }
+  ]
+}

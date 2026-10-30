@@ -1,0 +1,18 @@
+{
+  "id": "com.mariana.retrotv",
+  "version": "2.0.0",
+  "vendor": "Mariana",
+  "type": "web",
+  "main": "index.html",
+  "title": "Terminal",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "bgColor": "#120A18",
+  "iconColor": "#120A18",
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": true,
+  "requiredACG": [
+    "application.launcher",
+    "network.query"
+  ]
+}

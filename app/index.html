@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="terminal">
+<head>
+<meta charset="utf-8">
+<title>Terminal</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<section id="home" class="view on">
+  <div class="top">
+    <div>
+      <div class="prompt display">&gt; <span id="greet">hola</span><span class="cursor"></span></div>
+      <div class="date display" id="date"></div>
+      <div class="pc-status" id="pc">servidor ○ buscando…</div>
+    </div>
+    <div class="clock display">
+      <span class="time" id="time">--:--</span><span class="ampm" id="ampm"></span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="left">
+      <div class="panel weather">
+        <div class="now">
+          <div class="temp display" id="w-temp">--°</div>
+          <div>
+            <div class="label" id="w-city">clima</div>
+            <div class="cond" id="w-cond">Buscando el clima…</div>
+            <div class="feels" id="w-feels"></div>
+          </div>
+        </div>
+        <div class="days" id="w-days"></div>
+      </div>
+
+      <div class="section inputs-sec">
+        <div class="label" id="inputs-label">entradas</div>
+        <div class="inputs" id="inputs"></div>
+      </div>
+
+      <div class="section apps">
+        <div class="label"><span id="apps-label">¿qué ves hoy?</span> <span id="app-count"></span></div>
+        <div class="grid-box" id="grid-box"><div class="grid" id="dock"></div></div>
+      </div>
+    </div>
+
+    <!-- El pad: lo que se dibuja en el teléfono aparece aquí en vivo. -->
+    <div class="panel pad">
+      <div class="pad-head">
+        <div>
+          <div class="big display" id="pad-title">&gt; PAD_</div>
+          <div class="desc" id="pad-desc"></div>
+        </div>
+        <div class="qr">
+          <canvas id="qr" width="132" height="132" aria-label="Código QR del control"></canvas>
+          <div class="qr-label" id="qr-label">el control</div>
+        </div>
+      </div>
+      <div class="board-area" id="board-area">
+        <div class="board" id="board"><canvas id="board-canvas"></canvas></div>
+        <div class="board-hint" id="board-hint"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script src="qrcode.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

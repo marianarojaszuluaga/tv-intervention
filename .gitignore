@@ -1,0 +1,12 @@
+# Datos del simulador y de cada TV
+dev/datos/
+*.log
+tv-log.jsonl
+config.json
+
+# Llaves y permisos: nunca en el repo
+webos_rsa*
+*_rsa
+*.pem
+lgtv-key.json
+notas*

@@ -1,0 +1,161 @@
+@font-face { font-family: "VT323"; src: url("fonts/vt323-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Plex"; font-weight: 400; src: url("fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Plex"; font-weight: 500; src: url("fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2"); }
+
+/* ---------- Temas ----------
+   Cada tema solo cambia estas variables (y, si hace falta, quita adornos). Todo el texto cumple AA (4.5:1)
+   contra el fondo y las tarjetas, para leerse a 3 m. --ink1..4 son los colores del pad. */
+:root, [data-theme="terminal"] {
+  --bg: #120A18; --surface: #1E1226; --line: #3A1E3A;
+  --accent: #3CF2A0; --label: #3DB083; --accent-2: #1FC9B2; --clock: #F2B33D; --danger: #FF5C7A;
+  --text: #D8F5E6; --text-dim: #9DC2B0; --glow: rgba(60, 242, 160, 0.35);
+  --qr-fg: #120A18; --qr-bg: #D8F5E6;
+  --ink1: #3CF2A0; --ink2: #F2B33D; --ink3: #FF5C7A; --ink4: #D8F5E6;
+  --display: "VT323", monospace;
+}
+[data-theme="ambar"] {
+  --bg: #140D04; --surface: #20160A; --line: #45311A;
+  --accent: #FFB000; --label: #D69A2E; --accent-2: #FFD27A; --clock: #FFB000; --danger: #FF7A5C;
+  --text: #FFE6BF; --text-dim: #CDAA78; --glow: rgba(255, 176, 0, 0.35);
+  --qr-fg: #140D04; --qr-bg: #FFE6BF;
+  --ink1: #FFB000; --ink2: #FFE6BF; --ink3: #FF7A5C; --ink4: #6FD3FF;
+}
+[data-theme="synthwave"] {
+  --bg: #0B0E29; --surface: #161A40; --line: #2E3370;
+  --accent: #FF5FD2; --label: #E07BDD; --accent-2: #3EE6FF; --clock: #3EE6FF; --danger: #FF7A88;
+  --text: #F0EEFF; --text-dim: #ABB0DD; --glow: rgba(255, 95, 210, 0.4);
+  --qr-fg: #0B0E29; --qr-bg: #F0EEFF;
+  --ink1: #FF5FD2; --ink2: #3EE6FF; --ink3: #FFD45E; --ink4: #F0EEFF;
+}
+/* Minimal: un solo acento, sin barrido CRT, sin resplandor ni cursor; la letra y el espacio hacen la jerarquía. */
+[data-theme="minimal"] {
+  --bg: #F5F5F7; --surface: #FFFFFF; --line: #D2D2D7;
+  --accent: #0066CC; --label: #6A6A70; --accent-2: #1D1D1F; --clock: #1D1D1F; --danger: #C4002B;
+  --text: #1D1D1F; --text-dim: #5F5F65; --glow: rgba(0, 0, 0, 0);
+  --qr-fg: #1D1D1F; --qr-bg: #FFFFFF;
+  --ink1: #1D1D1F; --ink2: #0066CC; --ink3: #C4002B; --ink4: #1E8E3E;
+  --display: "Plex", monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 1920px; height: 1080px; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: "Plex", monospace; font-size: 28px; line-height: 1.4;
+}
+
+/* Textura CRT (solo Terminal y Ámbar, que son pantallas de fósforo): líneas de barrido y viñeta, muy tenues. */
+[data-theme="terminal"] body::after, [data-theme="ambar"] body::after {
+  content: ""; position: fixed; left: 0; top: 0; right: 0; bottom: 0; pointer-events: none; z-index: 50;
+  background:
+    repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px),
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.55) 100%);
+}
+
+.view { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; padding: 72px 96px; display: none; }
+.view.on { display: block; }
+
+.display { font-family: var(--display); font-weight: 400; letter-spacing: 0.02em; }
+.dim { color: var(--text-dim); }
+.label { font-size: 22px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--label); }
+
+/* ---------- Cabecera ---------- */
+.view#home { padding: 44px 96px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; height: 140px; }
+.prompt { font-size: 60px; color: var(--accent); line-height: 1.05; }
+.cursor { display: inline-block; width: 0.5em; height: 0.9em; background: var(--accent); vertical-align: -0.08em; margin-left: 6px; animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.date { font-size: 44px; color: var(--text); line-height: 1.1; margin-top: 4px; }
+.pc-status { margin-top: 6px; font-size: 22px; color: var(--text-dim); }
+.pc-status.ok { color: var(--accent-2); }
+
+.clock { text-align: right; }
+.clock .time { font-size: 150px; line-height: 0.85; color: var(--clock); }
+.clock .ampm { font-size: 50px; color: var(--clock); margin-left: 8px; }
+
+/* ---------- Dos columnas: lo que se ve a la izquierda, el pad a la derecha ---------- */
+.main { display: flex; height: 838px; margin-top: 18px; }
+.left { width: 1060px; display: flex; flex-direction: column; }
+.panel { background: var(--surface); border: 2px solid var(--line); border-radius: 20px; }
+
+.weather { height: 186px; flex: none; padding: 20px 32px; display: flex; flex-direction: column; }
+.weather .now { display: flex; align-items: center; }
+.weather .temp { font-size: 100px; line-height: 0.85; color: var(--accent-2); margin-right: 26px; }
+.weather .cond { font-size: 30px; color: var(--text); line-height: 1.2; }
+.weather .feels { font-size: 22px; color: var(--text-dim); }
+.days { display: flex; margin-top: auto; border-top: 2px solid var(--line); padding-top: 8px; }
+.day { flex: 1; display: flex; align-items: baseline; }
+.day .d { font-size: 22px; color: var(--label); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 12px; }
+.day .t { font-size: 32px; color: var(--text); }
+.day .t span { color: var(--text-dim); font-size: 26px; }
+
+.section { margin-top: 22px; flex: none; }
+.left > :first-child { margin-top: 0; }
+.inputs { display: flex; margin-top: 8px; padding: 4px; }
+.input { height: 64px; padding: 0 26px; margin-right: 16px; border-radius: 32px; background: var(--surface); border: 2px solid var(--line); display: flex; align-items: center; font-size: 25px; color: var(--text); }
+.input .dot { width: 12px; height: 12px; border-radius: 6px; background: var(--line); margin-right: 12px; }
+.input.on .dot { background: var(--accent-2); }
+.input.focus { transform: none; }
+
+.section.apps { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.grid-box { position: relative; flex: 1; min-height: 0; margin-top: 8px; overflow: hidden; }
+/* El margen derecho de la última columna se sale por la derecha: así caben 6 por fila (o más sin el pad). */
+.grid { position: absolute; left: 4px; right: -12px; top: 4px; }
+.tile { float: left; width: 160px; height: 100px; margin: 0 16px 14px 0; border-radius: 16px; background: var(--surface); border: 2px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tile img { max-width: 80px; max-height: 46px; }
+.tile .mono { font-size: 50px; line-height: 0.9; color: var(--accent); }
+.tile .name { font-size: 18px; color: var(--text-dim); margin-top: 5px; max-width: 144px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.pad { flex: 1; margin-left: 28px; padding: 24px 28px; display: flex; flex-direction: column; }
+.pad-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.pad .big { font-size: 68px; line-height: 1; color: var(--accent); }
+.pad .desc { font-size: 22px; color: var(--text-dim); margin-top: 8px; max-width: 360px; }
+.qr { text-align: center; }
+.qr canvas { display: block; width: 132px; height: 132px; border-radius: 10px; margin: 0 auto; }
+.qr-label { font-size: 18px; color: var(--text-dim); margin-top: 4px; }
+.board-area { position: relative; flex: 1; margin-top: 18px; }
+.board { position: absolute; left: 50%; top: 0; background: var(--bg); border: 2px solid var(--line); border-radius: 16px; overflow: hidden; }
+.board canvas { display: block; width: 100%; height: 100%; }
+.board-hint { position: absolute; left: 0; right: 0; top: 42%; text-align: center; font-size: 26px; line-height: 1.5; color: var(--text-dim); }
+
+/* ---------- Bloques que se pueden quitar desde Ajustes ---------- */
+.no-weather .weather, .no-inputs .section.inputs-sec, .no-apps .section.apps, .no-left .left, .no-qr .qr { display: none; }
+.no-pad .board-area, .no-pad .pad .desc, .no-pad.no-qr .pad { display: none; }
+.no-left .pad { margin-left: 0; }
+.no-pad .left { width: auto; flex: 1; }
+/* Sin pad pero con QR: queda una columna angosta solo con el código del control. */
+.no-pad .pad { flex: none; width: 340px; align-items: center; justify-content: center; }
+.no-pad .pad-head { flex-direction: column; align-items: center; }
+.no-pad .pad .big { font-size: 56px; margin-bottom: 24px; }
+.no-pad .qr canvas { width: 240px; height: 240px; }
+.no-pad .qr-label { font-size: 22px; }
+
+/* ---------- Foco: resplandor de fósforo, el único efecto que se mueve ---------- */
+.f { transition: transform 140ms ease-out, box-shadow 140ms ease-out, border-color 140ms ease-out; }
+.f.focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), 0 0 36px var(--glow); transform: scale(1.04); }
+.f.focus .name { color: var(--text); }
+
+/* ---------- Aviso ---------- */
+.toast { position: fixed; left: 50%; bottom: 64px; width: 1000px; margin-left: -500px; padding: 22px 32px; text-align: center; font-size: 28px; background: var(--surface); border: 2px solid var(--label); border-radius: 16px; opacity: 0; transition: opacity 160ms; z-index: 40; }
+.toast.on { opacity: 1; }
+.toast.bad { border-color: var(--danger); color: var(--danger); }
+
+/* ---------- Minimal: Plex en vez de la letra de terminal (es más ancha: tamaños menores) ---------- */
+[data-theme="minimal"] .cursor { display: none; }
+[data-theme="minimal"] .prompt { font-size: 46px; font-weight: 500; color: var(--text); }
+[data-theme="minimal"] .date { font-size: 32px; color: var(--text-dim); margin-top: 10px; }
+[data-theme="minimal"] .clock .time { font-size: 112px; font-weight: 500; letter-spacing: -0.02em; }
+[data-theme="minimal"] .clock .ampm { font-size: 36px; }
+[data-theme="minimal"] .weather .temp { font-size: 76px; font-weight: 500; }
+[data-theme="minimal"] .day .t { font-size: 26px; }
+[data-theme="minimal"] .day .t span { font-size: 22px; }
+[data-theme="minimal"] .tile .mono { font-size: 38px; font-weight: 500; }
+[data-theme="minimal"] .pad .big { font-size: 46px; font-weight: 500; color: var(--text); }
+[data-theme="minimal"] .panel, [data-theme="minimal"] .tile, [data-theme="minimal"] .input { border-color: var(--line); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor { animation: none; }
+  .f, .toast { transition: none; }
+  .f.focus { transform: none; }
+}

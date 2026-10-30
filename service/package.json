@@ -1,0 +1,6 @@
+{
+  "name": "com.mariana.retrotv.service",
+  "version": "1.0.0",
+  "description": "Servidor de Terminal dentro de la TV",
+  "main": "service.js"
+}

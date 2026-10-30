@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pad en vivo</title>
+<style>
+:root,[data-theme=terminal]{--bg:#120A18;--surface:#1E1226;--line:#3A1E3A;--green:#3CF2A0;--dim:#9DC2B0;--amber:#F2B33D;--text:#D8F5E6;--magenta:#FF5C7A;--teal:#1FC9B2;--ink1:#3CF2A0;--ink2:#F2B33D;--ink3:#FF5C7A;--ink4:#D8F5E6}
+[data-theme=ambar]{--bg:#140D04;--surface:#20160A;--line:#45311A;--green:#FFB000;--dim:#CDAA78;--amber:#FFD27A;--text:#FFE6BF;--magenta:#FF7A5C;--teal:#FFD27A;--ink1:#FFB000;--ink2:#FFE6BF;--ink3:#FF7A5C;--ink4:#6FD3FF}
+[data-theme=synthwave]{--bg:#0B0E29;--surface:#161A40;--line:#2E3370;--green:#FF5FD2;--dim:#ABB0DD;--amber:#3EE6FF;--text:#F0EEFF;--magenta:#FF7A88;--teal:#3EE6FF;--ink1:#FF5FD2;--ink2:#3EE6FF;--ink3:#FFD45E;--ink4:#F0EEFF}
+[data-theme=minimal]{--bg:#F5F5F7;--surface:#FFFFFF;--line:#D2D2D7;--green:#0066CC;--dim:#5F5F65;--amber:#6A6A70;--text:#1D1D1F;--magenta:#C4002B;--teal:#1E8E3E;--ink1:#1D1D1F;--ink2:#0066CC;--ink3:#C4002B;--ink4:#1E8E3E}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 ui-monospace,"Cascadia Mono",Consolas,monospace}
+main{max-width:1100px;margin:0 auto;padding:32px 16px}
+h1{color:var(--green);font-size:30px;margin:0;font-weight:600}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.live{display:flex;align-items:center;gap:8px;color:var(--dim)}
+.live i{width:10px;height:10px;border-radius:5px;background:var(--line)}
+.live.on{color:var(--teal)}.live.on i{background:var(--magenta);animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.board{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin:0 auto}
+canvas{display:block;width:100%;height:100%}
+h2{color:var(--amber);font-size:14px;letter-spacing:.1em;text-transform:uppercase;margin:40px 0 12px;font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.n{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}
+.n img{display:block;width:100%;border-radius:8px}
+.t{color:var(--dim);font-size:13px;margin-top:6px}
+.m{white-space:pre-wrap;margin-top:6px}
+.empty{color:var(--dim)}
+a{color:var(--green)}
+@media (prefers-reduced-motion:reduce){.live.on i{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>&gt; pad en vivo_</h1>
+    <div class="live" id="live"><i></i><span id="live-text">conectando…</span></div>
+  </div>
+  <div class="board" id="board"><canvas id="c"></canvas></div>
+  <p class="empty">Dibuja en la pestaña Pad del control (<a href="/control">/control</a> en el iPhone): aparece aquí y en la TV al instante.</p>
+
+  <h2>Dibujos guardados</h2>
+  <div class="grid" id="list"></div>
+</main>
+<script>
+var c = document.getElementById('c'), ctx = c.getContext('2d'), board = document.getElementById('board');
+var state = { aspect: 1.4, strokes: [] };
+// Fondo y colores del tema de la TV ("1".."4" → --ink1..4).
+function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function ink(col) { return /^[1-4]$/.test(col) ? css('--ink' + col) : col; }
+
+// Las coordenadas llegan relativas al ancho del pad del teléfono (0..1), así el dibujo escala igual.
+function size() {
+  var maxH = window.innerHeight * 0.68, w = board.parentNode.clientWidth;
+  if (w * state.aspect > maxH) w = maxH / state.aspect;
+  board.style.width = w + 'px'; board.style.height = (w * state.aspect) + 'px';
+  var r = window.devicePixelRatio || 1;
+  c.width = Math.round(w * r); c.height = Math.round(w * state.aspect * r);
+  redraw();
+}
+function W() { return c.width; }
+function redraw() {
+  ctx.fillStyle = css('--bg'); ctx.fillRect(0, 0, c.width, c.height);
+  state.strokes.forEach(function (s) { seg(s, 0); });
+}
+function seg(s, from) {
+  var w = W(); ctx.strokeStyle = ink(s.c); ctx.lineWidth = Math.max(2, w * 0.011); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  var p = s.p, i = Math.max(0, from - 1);
+  if (!p.length) return;
+  ctx.moveTo(p[i][0] * w, p[i][1] * w);
+  for (var k = i + 1; k < p.length; k++) ctx.lineTo(p[k][0] * w, p[k][1] * w);
+  if (p.length === 1) ctx.lineTo(p[0][0] * w + 0.1, p[0][1] * w);
+  ctx.stroke();
+}
+function apply(op) {
+  if (op.t === 'config') { document.documentElement.setAttribute('data-theme', op.config.theme); redraw(); return; }
+  if (op.t === 'state') { state = { aspect: op.aspect, strokes: op.strokes }; size(); return; }
+  if (op.t === 'aspect') { state.aspect = op.a; size(); return; }
+  if (op.t === 'start') { var s = { c: op.c, p: op.p.slice() }; state.strokes.push(s); seg(s, 0); return; }
+  if (op.t === 'pts') { var l = state.strokes[state.strokes.length - 1]; if (!l) return; var n = l.p.length; l.p = l.p.concat(op.p); seg(l, n); return; }
+  if (op.t === 'undo') { state.strokes.pop(); redraw(); return; }
+  if (op.t === 'clear') { state.strokes = []; redraw(); }
+}
+
+var lastOp = 0;
+function connect() {
+  var es = new EventSource('/api/live/stream'), liveEl = document.getElementById('live');
+  es.onopen = function () { liveEl.className = 'live on'; document.getElementById('live-text').textContent = 'en vivo'; };
+  es.onmessage = function (e) {
+    var op = JSON.parse(e.data); apply(op);
+    if (op.t !== 'state') { lastOp = Date.now(); document.title = '● Pad en vivo'; }
+  };
+  es.onerror = function () { liveEl.className = 'live'; document.getElementById('live-text').textContent = 'reconectando…'; };
+}
+setInterval(function () { if (Date.now() - lastOp > 4000) document.title = 'Pad en vivo'; }, 1000);
+window.addEventListener('resize', size);
+size(); connect();
+
+// Dibujos guardados con "Guardar" en el teléfono.
+var seen = -1;
+function esc(s) { return s.replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); }
+function load() {
+  fetch('/api/notes').then(function (r) { return r.json(); }).then(function (d) {
+    if (d.notes.length === seen) return; seen = d.notes.length;
+    var notes = d.notes.slice().reverse();
+    document.getElementById('list').innerHTML = notes.length ? notes.map(function (n) {
+      return '<div class="n">' + (n.image ? '<img src="' + esc(n.image) + '" alt="Dibujo guardado">' : '') + (n.text ? '<div class="m">' + esc(n.text) + '</div>' : '') + '<div class="t">' + esc(n.time) + '</div></div>';
+    }).join('') : '<p class="empty">Aún no hay dibujos guardados.</p>';
+  }).catch(function () {});
+}
+load(); setInterval(load, 3000);
+</script>
+</body>
+</html>
