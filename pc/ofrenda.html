@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1a0f0a">
+<title>Ofrenda · Día de Muertos</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a0f0a; --card: #2a1810; --ink: #fbeedd; --muted: #c9ab8f;
+    --cempasuchil: #f28c1b; --rosa: #d6336c; --morado: #6a2c91; --verde: #2f8f4e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100dvh; color: var(--ink); background: var(--bg);
+    font-family: 'Nunito', system-ui, sans-serif;
+    background-image: radial-gradient(ellipse at 50% 120%, rgba(242,140,27,.25), transparent 60%);
+  }
+  .picado { display: flex; height: 54px; overflow: hidden; }
+  .picado span { flex: 1; clip-path: polygon(0 0,100% 0,100% 78%,88% 100%,75% 78%,62% 100%,50% 78%,38% 100%,25% 78%,12% 100%,0 78%); opacity: .9; }
+  main { max-width: 480px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 2.2rem; line-height: 1.05; margin: 8px 0 6px; text-align: center; }
+  .sub { color: var(--muted); text-align: center; margin: 0 0 24px; }
+  .drop {
+    display: grid; place-items: center; gap: 8px; text-align: center; cursor: pointer;
+    aspect-ratio: 4/5; border: 2px dashed rgba(242,140,27,.6); border-radius: 18px;
+    background: var(--card); padding: 16px; position: relative; overflow: hidden;
+  }
+  .drop .icon { font-size: 3rem; }
+  .drop strong { font-size: 1.1rem; }
+  .drop small { color: var(--muted); }
+  .drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .drop.has-img { border-style: solid; }
+  input[type=file] { display: none; }
+  label.field { display: block; margin-top: 18px; font-weight: 600; }
+  label.field small { font-weight: 400; color: var(--muted); }
+  input[type=text], textarea {
+    width: 100%; margin-top: 6px; padding: 14px; font: inherit; font-size: 16px; color: var(--ink);
+    background: var(--card); border: 1px solid rgba(251,238,221,.15); border-radius: 12px;
+  }
+  textarea { resize: none; height: 80px; }
+  input:focus, textarea:focus { outline: 2px solid var(--cempasuchil); border-color: transparent; }
+  button {
+    width: 100%; margin-top: 24px; padding: 16px; font: inherit; font-weight: 700; font-size: 1.1rem;
+    color: #1a0f0a; background: var(--cempasuchil); border: 0; border-radius: 14px; cursor: pointer;
+  }
+  button:disabled { opacity: .5; }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid rgba(251,238,221,.3); }
+  .msg { margin-top: 14px; text-align: center; min-height: 1.4em; color: var(--muted); }
+  .msg.error { color: #ff8a8a; }
+  .done { text-align: center; padding-top: 30px; }
+  .done .icon { font-size: 4rem; }
+  .done h2 { font-family: 'Cormorant Garamond', serif; font-size: 2rem; margin: 10px 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="picado" aria-hidden="true">
+  <span style="background:#f28c1b"></span><span style="background:#6a2c91"></span><span style="background:#d6336c"></span><span style="background:#2f8f4e"></span><span style="background:#f2c12e"></span>
+</div>
+<main>
+  <section id="form">
+    <h1>Pon tu ofrenda<br>en el altar</h1>
+    <p class="sub">Sube la foto de tu ser querido y aparecerá en la pantalla.</p>
+
+    <label class="drop" id="drop" for="file">
+      <span class="icon">🌼</span>
+      <strong>Toca para elegir una foto</strong>
+      <small>De tu galería o con la cámara</small>
+      <img id="preview" alt="" hidden>
+    </label>
+    <input type="file" id="file" accept="image/*,.heic,.heif">
+
+    <label class="field">¿A quién recordamos? <small>(opcional)</small>
+      <input type="text" id="nombre" maxlength="60" placeholder="Ej. Abuela Lupita" autocomplete="off">
+    </label>
+    <label class="field">Unas palabras <small>(opcional)</small>
+      <textarea id="mensaje" maxlength="120" placeholder="Ej. Siempre en nuestro corazón"></textarea>
+    </label>
+
+    <button id="send" disabled>Colocar en el altar</button>
+    <p class="msg" id="msg" role="status"></p>
+  </section>
+
+  <section id="done" class="done" hidden>
+    <div class="icon">🕯️</div>
+    <h2>Tu ofrenda ya está en el altar</h2>
+    <p class="sub">Mírala en la pantalla.</p>
+    <button id="again">Subir otra foto</button>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const MAX_SIDE = 1100; // la TV tiene poca memoria: fotos livianas
+let photoBlob = null;
+
+function loadImage(blob) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => resolve(img);
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    img.src = url;
+  });
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// Decode whatever the phone gives us (JPEG, PNG, HEIC, WebP, GIF…) and re-encode as a light JPEG.
+async function toJpeg(file) {
+  let img;
+  try {
+    img = await loadImage(file);
+  } catch {
+    // Android/Chrome cannot decode HEIC/HEIF from iPhones: convert it in the browser.
+    if (!window.heic2any) await loadScript('/heic2any.min.js');
+    const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+    img = await loadImage(Array.isArray(converted) ? converted[0] : converted);
+  }
+  const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.naturalWidth * scale);
+  canvas.height = Math.round(img.naturalHeight * scale);
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  URL.revokeObjectURL(img.src);
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+}
+
+function setMsg(text, error = false) {
+  $('msg').textContent = text;
+  $('msg').classList.toggle('error', error);
+}
+
+$('file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  photoBlob = null;
+  $('send').disabled = true;
+  setMsg('Preparando la foto…');
+  try {
+    photoBlob = await toJpeg(file);
+    $('preview').src = URL.createObjectURL(photoBlob);
+    $('preview').hidden = false;
+    $('drop').classList.add('has-img');
+    $('send').disabled = false;
+    setMsg('');
+  } catch (err) {
+    console.error(err);
+    setMsg('No pudimos abrir esa foto. Intenta con otra.', true);
+  }
+});
+
+$('send').addEventListener('click', async () => {
+  if (!photoBlob) return;
+  $('send').disabled = true;
+  setMsg('Subiendo…');
+  const params = new URLSearchParams({ nombre: $('nombre').value, mensaje: $('mensaje').value });
+  try {
+    const res = await fetch('/api/altar?' + params, {
+      method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: photoBlob,
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Error');
+    $('form').hidden = true;
+    $('done').hidden = false;
+    setMsg('');
+  } catch (err) {
+    setMsg('No se pudo subir: ' + err.message + '. Revisa que estés en el Wi-Fi de la fiesta.', true);
+    $('send').disabled = false;
+  }
+});
+
+$('again').addEventListener('click', () => {
+  photoBlob = null;
+  $('file').value = ''; $('nombre').value = ''; $('mensaje').value = '';
+  $('preview').hidden = true; $('drop').classList.remove('has-img');
+  $('send').disabled = true;
+  $('done').hidden = true; $('form').hidden = false;
+});
+</script>
+</body>
+</html>

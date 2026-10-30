@@ -9,7 +9,7 @@ var CONFIG = {
   defaults: {
     name: "", plural: false, greeting: "auto", olaKeAse: true, city: "", theme: "terminal",
     hidden: ["LG Channels", "LG Gaming Portal"],
-    blocks: { weather: true, inputs: true, apps: true, pad: true, qr: true }
+    blocks: { weather: true, inputs: true, apps: true, pad: true, qr: true, altar: true }
   },
 
   // Apps del dock si la TV no deja leer la lista instalada (y su orden preferido).

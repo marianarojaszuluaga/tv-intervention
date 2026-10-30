@@ -9,6 +9,7 @@ y control remoto en el teléfono. **Un solo paquete para todas las TVs**: lo per
 | `app/` | TV | Inicio. Temas, textos y bloques salen de los ajustes de la TV y cambian en vivo. QR generado en la TV con su propia IP (`qrcode.js`, MIT) |
 | `service/` | TV | Servidor (Node 12, `com.mariana.retrotv.service`, puerto 8765): control del teléfono, pad en vivo, apps e íconos, Home → Terminal, ajustes (`/api/config`) |
 | `pc/telefono.html`, `pc/computador.html` | Teléfono / navegador | Páginas que sirve el servicio (se copian a `service/www` al empaquetar) |
+| `app/altar.js`, `app/altar.css`, `pc/ofrenda.html` | TV / teléfono de los invitados | **Altar de muertos**: ver abajo |
 | `instalar-en-otra-tv.ps1` | Computador (Windows) | Instalador guiado. Ver **[GUIA-OTRA-TV.md](GUIA-OTRA-TV.md)** |
 | `docs/` | — | [TV-INSTALADA.md](docs/TV-INSTALADA.md): lo hecho en la primera TV · [CLEANYOURTV.md](docs/CLEANYOURTV.md): referencia del repo cleanyourtv |
 | `dev/simular-tv.js` | Computador | Prueba sin TV: `node dev/simular-tv.js` → app de la TV en :8766, control en :8765/control |
@@ -28,7 +29,7 @@ desde el teléfono → **Ajustes**. El servicio los da en `GET /api/config` y lo
 | `city` | Ciudad del clima (Open-Meteo, sin clave) |
 | `theme` | `terminal`, `ambar`, `synthwave`, `minimal` |
 | `hidden` | Apps que no salen en el inicio (por id; también acepta el nombre) |
-| `blocks` | `weather`, `inputs`, `apps`, `pad`, `qr`: `false` lo quita del inicio |
+| `blocks` | `weather`, `inputs`, `apps`, `pad`, `qr`, `altar`: `false` lo quita del inicio |
 
 ## Lo que sabe hacer cada TV
 
@@ -48,12 +49,29 @@ El pad manda colores del tema (`"1"`..`"4"` → `--ink1..4`), así los trazos se
 ## Empaquetar e instalar
 
 ```bash
-cp pc/telefono.html pc/computador.html pc/icon-180.png service/www/
+cp pc/telefono.html pc/computador.html pc/icon-180.png pc/ofrenda.html pc/heic2any.min.js service/www/
 ares-package app service -o dist
 ```
 
 En otra TV: `instalar-en-otra-tv.ps1` (Windows). Desde bash: `TV_KEY=<llave sin passphrase> sh instalar.sh <ip-tv>`.
 `ares-install` no conecta con estas TVs (piden `ssh-rsa`); ambos scripts usan OpenSSH.
+
+## Altar de muertos
+
+Mosaico **Altar** al inicio de las apps (se quita en el teléfono → Ajustes → *Altar de muertos*). Abre a pantalla
+completa un altar con papel picado, cempasúchil, velas y pétalos. Los invitados escanean el QR del altar
+(`http://<ip-tv>:8765/ofrenda`, tienen que estar en la Wi-Fi de la casa), eligen una foto y opcionalmente un nombre
+y unas palabras; la foto sale en grande unos segundos ("Una nueva ofrenda llega al altar") y luego en su marco.
+
+- **El teléfono convierte la foto** (JPEG, PNG, HEIC/HEIF, WebP…) a JPEG de 1100 px antes de subirla
+  (`heic2any`, MIT, va en el paquete). Así la TV solo recibe fotos livianas.
+- **En vivo**: `POST /api/altar?nombre=&mensaje=` (cuerpo: la imagen) guarda en `/media/internal/retrotv/altar/` y
+  lo anuncia por `/api/live/stream` (`{t:"altar"}` / `{t:"altar-quitar"}`). `GET /api/altar` da la lista.
+- **Quitar fotos solo con el control**: en el altar, OK → flechas para elegir → OK dos veces. `POST /api/altar/quitar`
+  solo acepta peticiones de la propia TV (127.0.0.1), no de los teléfonos.
+- Mientras el altar está en pantalla la TV **no pone el protector**. Si llega una foto con el inicio de Terminal
+  en pantalla, el altar se abre solo.
+- 12 fotos por pantalla; con más, rotan cada 14 s (constantes al inicio de `app/altar.js`).
 
 ## Ojo
 

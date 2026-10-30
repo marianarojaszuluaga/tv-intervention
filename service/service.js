@@ -36,16 +36,19 @@ CANDIDATES.some(function (d) {
 var NOTES_DIR = path.join(DATA, "notas");
 var NOTES_FILE = path.join(DATA, "notas.json");
 var CONFIG_FILE = path.join(DATA, "config.json");
+var ALTAR_DIR = path.join(DATA, "altar");
+var ALTAR_FILE = path.join(DATA, "altar.json");
 try { fs.mkdirSync(NOTES_DIR, { recursive: true }); } catch (e) {}
+try { fs.mkdirSync(ALTAR_DIR, { recursive: true }); } catch (e) {}
 
 // ---------- Ajustes de esta TV ----------
 var THEMES = ["terminal", "ambar", "synthwave", "minimal"];
 var GREETINGS = ["auto", "dias", "tardes", "noches", "ola"];
-var BLOCKS = ["weather", "inputs", "apps", "pad", "qr"];
+var BLOCKS = ["weather", "inputs", "apps", "pad", "qr", "altar"];
 var DEFAULTS = {
   name: "", plural: false, greeting: "auto", olaKeAse: true, city: "", theme: "terminal",
   hidden: ["LG Channels", "LG Gaming Portal"],
-  blocks: { weather: true, inputs: true, apps: true, pad: true, qr: true }
+  blocks: { weather: true, inputs: true, apps: true, pad: true, qr: true, altar: true }
 };
 function str(v, max) { return String(v == null ? "" : v).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, max); }
 // Une lo guardado (o lo que llega del iPhone) con lo anterior, campo a campo y validando cada uno.
@@ -78,7 +81,8 @@ function myIP() {
 }
 function info() {
   var ip = myIP();
-  return { config: config, ip: ip, port: PORT, control: ip ? "http://" + ip + ":" + PORT + "/control" : null };
+  return { config: config, ip: ip, port: PORT, control: ip ? "http://" + ip + ":" + PORT + "/control" : null,
+    ofrenda: ip ? "http://" + ip + ":" + PORT + "/ofrenda" : null };
 }
 
 function log(line) {
@@ -178,6 +182,54 @@ function watch() {
   });
 }
 
+// ---------- Altar de muertos ----------
+// Los invitados suben la foto de su ser querido desde /ofrenda (QR en el altar); la TV la muestra en un marco.
+// El teléfono ya la manda convertida a JPEG y reducida. Solo la TV misma (127.0.0.1) puede quitar fotos.
+function loadAltar() { try { return JSON.parse(fs.readFileSync(ALTAR_FILE, "utf8")); } catch (e) { return []; } }
+function saveAltar(a) { fs.writeFileSync(ALTAR_FILE, JSON.stringify(a)); }
+function imageExt(buf) {
+  if (buf[0] === 0xff && buf[1] === 0xd8) return "jpg";
+  if (buf.slice(0, 4).toString("hex") === "89504e47") return "png";
+  return null;
+}
+function readRaw(req, max, cb) {
+  var parts = [], n = 0, over = false;
+  req.on("data", function (d) { n += d.length; if (n > max) { over = true; req.destroy(); } else parts.push(d); });
+  req.on("end", function () { cb(over ? null : Buffer.concat(parts)); });
+}
+function query(req) {
+  var q = {};
+  (req.url.split("?")[1] || "").split("&").forEach(function (kv) {
+    var i = kv.indexOf("=");
+    if (i > 0) try { q[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1).replace(/\+/g, " ")); } catch (e) {}
+  });
+  return q;
+}
+function addOfrenda(req, res) {
+  readRaw(req, 15000000, function (buf) {
+    if (!buf) return send(res, 413, { error: "La foto es demasiado grande" });
+    var ext = imageExt(buf);
+    if (!ext) return send(res, 415, { error: "Formato no reconocido" });
+    var q = query(req), id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    try { fs.writeFileSync(path.join(ALTAR_DIR, id + "." + ext), buf); } catch (e) { return send(res, 500, { error: "No pude guardar: " + e.message }); }
+    var o = { id: id, file: id + "." + ext, nombre: str(q.nombre, 60), mensaje: str(q.mensaje, 120), creado: new Date().toISOString() };
+    var list = loadAltar(); list.push(o); saveAltar(list);
+    log("[altar] nueva ofrenda " + id);
+    broadcast([{ t: "altar", ofrenda: o }]);
+    send(res, 200, o);
+  });
+}
+function removeOfrenda(id) {
+  var list = loadAltar(), o = null;
+  list = list.filter(function (x) { if (x.id === id) { o = x; return false; } return true; });
+  if (!o) return false;
+  saveAltar(list);
+  fs.unlink(path.join(ALTAR_DIR, o.file), function () {});
+  log("[altar] quitada " + id);
+  broadcast([{ t: "altar-quitar", id: id }]);
+  return true;
+}
+
 // ---------- HTTP ----------
 function isLocal(addr) {
   addr = String(addr || "").replace(/^::ffff:/, "");
@@ -213,6 +265,9 @@ var server = http.createServer(function (req, res) {
     if (url === "/") return file(res, "computador.html", "text/html; charset=utf-8");
     if (url === "/control") return file(res, "telefono.html", "text/html; charset=utf-8");
     if (url === "/icon.png") return file(res, "icon-180.png", "image/png");
+    if (url === "/ofrenda") return file(res, "ofrenda.html", "text/html; charset=utf-8");
+    if (url === "/heic2any.min.js") return file(res, "heic2any.min.js", "text/javascript; charset=utf-8");
+    if (url === "/api/altar") return send(res, 200, { ofrendas: loadAltar(), ofrenda: info().ofrenda });
     if (url === "/manifest.webmanifest") return send(res, 200, { name: "Control TV", short_name: "Control TV", start_url: "/control",
       display: "standalone", background_color: "#120A18", theme_color: "#120A18", icons: [{ src: "/icon.png", sizes: "180x180", type: "image/png" }] }, "application/manifest+json");
     if (url === "/api/health") return send(res, 200, { ok: true, tv: tv.paired(), where: "tv", platform: "webos", can: CAN });
@@ -247,10 +302,14 @@ var server = http.createServer(function (req, res) {
     }
     var im = /^\/tvicon\/([0-9a-f]{40}\/[\w.-]+\.(png|jpg))$/.exec(url);
     if (im) return fetchIcon(im[1], function (err, data) { if (err) send(res, 404, { error: "sin ícono" }); else send(res, 200, data, im[2] === "png" ? "image/png" : "image/jpeg"); });
+    var am = /^\/altar\/fotos\/([a-z0-9]+\.(jpg|png))$/.exec(url);
+    if (am) return fs.readFile(path.join(ALTAR_DIR, am[1]), function (err, data) { if (err) send(res, 404, { error: "no existe" }); else send(res, 200, data, am[2] === "png" ? "image/png" : "image/jpeg"); });
     var nm = /^\/notas\/([\w-]+\.png)$/.exec(url);
     if (nm) return fs.readFile(path.join(NOTES_DIR, nm[1]), function (err, data) { if (err) send(res, 404, { error: "no existe" }); else send(res, 200, data, "image/png"); });
     return send(res, 404, { error: "no existe" });
   }
+
+  if (req.method === "POST" && url === "/api/altar") return addOfrenda(req, res);
 
   if (req.method === "POST") {
     return readBody(req, function (data) {
@@ -297,6 +356,11 @@ var server = http.createServer(function (req, res) {
         }
         var notes = loadNotes(); notes.push(note); saveNotes(notes);
         return send(res, 200, { ok: true });
+      }
+      if (url === "/api/altar/quitar") {
+        // Solo desde la propia TV (el control remoto en el altar), no desde los teléfonos de los invitados.
+        if (!/^(::ffff:)?127\./.test(req.socket.remoteAddress || "")) return send(res, 403, { error: "solo desde la TV" });
+        return removeOfrenda(String(data.id || "")) ? send(res, 200, { ok: true }) : send(res, 404, { error: "no existe" });
       }
       if (url === "/api/log") { log("[app] " + JSON.stringify(data).slice(0, 2000)); return send(res, 200, { ok: true }); }
       send(res, 404, { error: "no existe" });
