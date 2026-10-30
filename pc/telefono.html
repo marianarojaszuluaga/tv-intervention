@@ -51,7 +51,7 @@ main{flex:1;min-height:0;position:relative}
 .okring.hit{background:var(--accent);color:var(--bg)}
 .touch{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:28px;background:var(--accent);opacity:.18;pointer-events:none;display:none}
 
-.keys{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+.keys{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:12px;margin-top:14px}
 .key{height:60px;border-radius:18px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px}
 .key svg{flex:none}
 .key.down,.rocker button.down{background:var(--accent);color:var(--bg);border-color:var(--accent)}
@@ -113,7 +113,9 @@ select{font:inherit;color:var(--accent);background:none;border:none;text-align:r
 .theme i span{width:16px;height:16px;border-radius:8px}
 .saved{text-align:center;font-size:13px;color:var(--dim);padding:4px 0 12px}
 
-nav{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--nav);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom)}
+.nocan{display:none!important}
+.note{padding:16px;border-radius:18px;background:var(--surface);border:1px solid var(--line);color:var(--dim);font-size:15px;line-height:1.45;margin-bottom:14px}
+nav{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-top:1px solid var(--line);background:var(--nav);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom)}
 nav button{height:var(--tab);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--dim)}
 nav button.on{color:var(--accent)}
 
@@ -128,14 +130,15 @@ nav button.on{color:var(--accent)}
     <div class="title mono" id="hello">&gt;_ hola</div>
     <div class="status" id="status"><span class="dot"></span><span id="status-text">Conectando…</span></div>
   </div>
-  <button class="power" id="power" aria-label="Apagar la TV">
+  <button class="power" id="power" data-can="power" aria-label="Apagar la TV">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
   </button>
 </header>
 
 <main>
   <section class="tab on" id="t-control">
-    <div class="surface" id="surface" aria-label="Superficie táctil: desliza para moverte, toca para OK">
+    <div class="note nocan" data-can-not="dpad">Esta TV no deja mover la selección desde el teléfono: usa su control remoto. Desde aquí sí puedes abrir apps, cambiar el volumen y dibujar en el pad.</div>
+    <div class="surface" id="surface" data-can="dpad" aria-label="Superficie táctil: desliza para moverte, toca para OK">
       <svg class="chev up" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
       <svg class="chev down" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       <svg class="chev left" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
@@ -146,10 +149,10 @@ nav button.on{color:var(--accent)}
     </div>
 
     <div class="keys">
-      <button class="key" data-b="BACK"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Atrás</button>
-      <button class="key" data-launch="com.mariana.retrotv"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9H4z"/></svg>HOME</button>
+      <button class="key" data-b="BACK" data-can="dpad"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Atrás</button>
+      <button class="key" id="home" data-can="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9H4z"/></svg>HOME</button>
     </div>
-    <div class="rocker">
+    <div class="rocker" data-can="volume">
       <button data-b="VOLUMEDOWN" aria-label="Bajar volumen">−</button>
       <button data-b="MUTE" aria-label="Silenciar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l4 6M21 9l-4 6"/></svg></button>
       <button data-b="VOLUMEUP" aria-label="Subir volumen">+</button>
@@ -158,8 +161,8 @@ nav button.on{color:var(--accent)}
 
   <section class="tab" id="t-apps">
     <div class="scroller">
-      <div class="label">Entradas</div>
-      <div class="inputs" id="inputs"></div>
+      <div class="label" data-can="inputs">Entradas</div>
+      <div class="inputs" id="inputs" data-can="inputs"></div>
       <div class="label">Apps</div>
       <div class="grid" id="apps"><div class="empty">Cargando apps de la TV…</div></div>
     </div>
@@ -218,7 +221,7 @@ nav button.on{color:var(--accent)}
       <div class="label">En el inicio de la TV</div>
       <div class="group" id="s-blocks">
         <label class="row"><span>Clima</span><input type="checkbox" class="switch" data-block="weather"></label>
-        <label class="row"><span>Entradas (HDMI, TV)</span><input type="checkbox" class="switch" data-block="inputs"></label>
+        <label class="row" data-can="inputs"><span>Entradas (HDMI, TV)</span><input type="checkbox" class="switch" data-block="inputs"></label>
         <label class="row"><span>Apps</span><input type="checkbox" class="switch" data-block="apps"></label>
         <label class="row"><span>Pad en vivo</span><input type="checkbox" class="switch" data-block="pad"></label>
         <label class="row"><span>QR al control</span><input type="checkbox" class="switch" data-block="qr"></label>
@@ -234,8 +237,8 @@ nav button.on{color:var(--accent)}
 
 <nav>
   <button class="on" data-tab="t-control"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="4"/><circle cx="12" cy="8" r="2.5"/></svg>Control</button>
-  <button data-tab="t-apps"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Apps</button>
-  <button data-tab="t-notes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg>Pad</button>
+  <button data-tab="t-apps" data-can="apps"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Apps</button>
+  <button data-tab="t-notes" data-can="pad"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg>Pad</button>
   <button data-tab="t-settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Ajustes</button>
 </nav>
 <div class="toast" id="toast"></div>
@@ -321,7 +324,21 @@ surface.addEventListener('pointerup', endGesture);
 surface.addEventListener('pointercancel', function () { $('touch').style.display = 'none'; g = null; });
 
 document.querySelectorAll('[data-b]').forEach(function (b) { pressable(b, function () { remote({ button: b.dataset.b }); }); });
-document.querySelectorAll('[data-launch]').forEach(function (b) { pressable(b, function () { remote({ launch: b.dataset.launch }); }); });
+pressable($('home'), function () { remote({ home: true }); });
+
+// ---------- Lo que esta TV sabe hacer ----------
+// El servidor manda can: [...] en /api/health (webOS y Android no pueden lo mismo).
+// Sin respuesta, o con un servidor viejo sin can, no se esconde nada.
+function applyCan(can) {
+  document.querySelectorAll('[data-can]').forEach(function (e) { e.classList.toggle('nocan', can.indexOf(e.dataset.can) < 0); });
+  document.querySelectorAll('[data-can-not]').forEach(function (e) { e.classList.toggle('nocan', can.indexOf(e.dataset.canNot) >= 0); });
+  var on = document.querySelector('nav button.on');
+  if (on && on.classList.contains('nocan')) document.querySelector('nav button:not(.nocan)').click();
+}
+function loadCan() {
+  api('/api/health').then(function (d) { if (Array.isArray(d.can)) applyCan(d.can); }).catch(function () { setTimeout(loadCan, 5000); });
+}
+loadCan();
 
 // Apagar: dos toques, para no apagarla sin querer.
 var armT;

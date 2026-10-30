@@ -30,6 +30,14 @@ desde el teléfono → **Ajustes**. El servicio los da en `GET /api/config` y lo
 | `hidden` | Apps que no salen en el inicio (por id; también acepta el nombre) |
 | `blocks` | `weather`, `inputs`, `apps`, `pad`, `qr`: `false` lo quita del inicio |
 
+## Lo que sabe hacer cada TV
+
+`GET /api/health` responde `can`: la lista de lo que la plataforma puede hacer (`dpad`, `volume`, `power`, `apps`,
+`inputs`, `home`, `lgHome`, `pad`, `notes`, `settings`). El teléfono esconde lo que no esté, así el mismo `telefono.html`
+sirve en webOS (todo) y en Android TV (sin flechas, sin apagar ni entradas; ver [PLAN-CLEANYOURTV.md](PLAN-CLEANYOURTV.md)).
+El botón HOME manda `{"home": true}` y cada servidor abre su propia app. Para probar otra lista en el simulador:
+`TERMINAL_CAN=volume,apps,home,pad,notes,settings node dev/simular-tv.js`.
+
 ## Temas
 
 Variables CSS en `app/style.css` (y las mismas en `pc/telefono.html` y `pc/computador.html`). Todo el texto

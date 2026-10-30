@@ -104,7 +104,7 @@ y en la columna Permissions de `addons/README.md`, como exige el test.
 
 ## 5. Fases
 
-1. **Contrato compartido** (en `retro-tv-kit/`): `/api/health` con `can`, `telefono.html` que esconda lo que no hay. Pequeño, verificable con el simulador.
+1. ✅ **Contrato compartido** (hecho el 30 oct 2026): `/api/health` con `can`, `telefono.html` esconde lo que no hay, HOME manda `{"home": true}`. Probado en el simulador con la lista de webOS y la de Android.
 2. **Add-on mínimo** `addons/terminal/`: tarjeta, pantalla (saludo, trato, reloj, clima, 4 temas, pad, QR) y servidor mientras está abierta. Pruebas unitarias en Java como los demás add-ons (servidor, validación de ajustes, pad).
 3. **Prueba en una Android TV real** + `screenshot.jpg` + fila en `addons/README.md` → PR `addons: Terminal, a live pad and phone settings`.
 4. **Repo webOS propio** + fila en `SHOWCASE.md` (PR aparte).

@@ -17,6 +17,9 @@ var MY_APP = "com.mariana.retrotv";
 var HOME_APP = "com.webos.app.home";
 var PORT = 8765;
 var WWW = path.join(__dirname, "www");
+// Lo que esta plataforma sabe hacer. El teléfono lo lee en /api/health y esconde lo demás,
+// así el mismo telefono.html sirve en webOS y en Android TV. TERMINAL_CAN lo cambia (solo para el simulador).
+var CAN = (process.env.TERMINAL_CAN || "dpad,volume,power,apps,inputs,home,lgHome,pad,notes,settings").split(",");
 var service = new Service(SERVICE_ID);
 
 // ---------- Datos: primera carpeta en la que se pueda escribir ----------
@@ -212,7 +215,7 @@ var server = http.createServer(function (req, res) {
     if (url === "/icon.png") return file(res, "icon-180.png", "image/png");
     if (url === "/manifest.webmanifest") return send(res, 200, { name: "Control TV", short_name: "Control TV", start_url: "/control",
       display: "standalone", background_color: "#120A18", theme_color: "#120A18", icons: [{ src: "/icon.png", sizes: "180x180", type: "image/png" }] }, "application/manifest+json");
-    if (url === "/api/health") return send(res, 200, { ok: true, tv: tv.paired(), where: "tv" });
+    if (url === "/api/health") return send(res, 200, { ok: true, tv: tv.paired(), where: "tv", platform: "webos", can: CAN });
     if (url === "/api/notes") return send(res, 200, { notes: loadNotes() });
     if (url === "/api/config") return send(res, 200, info());
     if (url === "/api/log") {
@@ -270,6 +273,8 @@ var server = http.createServer(function (req, res) {
           if (!/^[A-Z0-9_]{1,20}$/.test(name)) return send(res, 400, { error: "botón inválido" });
           return tv.button(name, done);
         }
+        // HOME del teléfono: abre Terminal sin que el teléfono sepa el id de la app en esta plataforma.
+        if (data.home) return tv.request("ssap://system.launcher/launch", { id: MY_APP }, done);
         if (data.launch) return tv.request("ssap://system.launcher/launch", { id: String(data.launch) }, done);
         if (data.move) return tv.move(data.move[0], data.move[1], done);
         if (data.power === "off") return tv.request("ssap://system/turnOff", {}, done);
