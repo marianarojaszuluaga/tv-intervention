@@ -24,7 +24,7 @@ $ares = Get-Command ares-package -ErrorAction SilentlyContinue
 if ($ares) {
   # Las páginas del teléfono y del computador las sirve el servicio desde service/www.
   New-Item -ItemType Directory -Force (Join-Path $here "service\www") | Out-Null
-  Copy-Item (Join-Path $here "pc\telefono.html"), (Join-Path $here "pc\computador.html"), (Join-Path $here "pc\icon-180.png") (Join-Path $here "service\www") -Force
+  Copy-Item (Join-Path $here "pc\telefono.html"), (Join-Path $here "pc\computador.html"), (Join-Path $here "pc\icon-180.png"), (Join-Path $here "pc\ofrenda.html"), (Join-Path $here "pc\heic2any.min.js") (Join-Path $here "service\www") -Force
   $dist = Join-Path $here "dist"
   if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
   Push-Location $here

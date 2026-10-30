@@ -10,7 +10,7 @@ SSH="ssh -i $KEY -p 9922 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/
 
 # Las páginas del iPhone y del computador las sirve el servicio desde service/www.
 mkdir -p service/www
-cp pc/telefono.html pc/computador.html pc/icon-180.png service/www/
+cp pc/telefono.html pc/computador.html pc/icon-180.png pc/ofrenda.html pc/heic2any.min.js service/www/
 
 rm -rf dist && mkdir dist
 ares-package app service -o dist >/dev/null

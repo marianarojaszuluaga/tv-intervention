@@ -48,6 +48,14 @@ Estado al 29 oct 2026.
   la primera vez arranca con los ajustes por defecto y hay que poner nombre, trato, ciudad y tema desde el teléfono → Ajustes.
 - El permiso de LG y la llave de Developer Mode **nunca** van al repo (`.gitignore` los excluye).
 
+## Altar de muertos (2.1.0, rama `diademuertos`)
+
+Mosaico **Altar** en el inicio, fotos subidas por QR (`/ofrenda`) y guardadas en `/media/internal/retrotv/altar/`.
+Probado en el simulador con un iPhone simulado: subir fotos, que el altar se abra solo, destacar la nueva, quitar con
+el control y que el QR lleve a `http://<ip-tv>:8765/ofrenda`. **Sin probar en la TV real**: rendimiento de las
+animaciones (pétalos, velas) en webOS TV Lite y la memoria con 12 fotos en pantalla. Si va lento, bajar `PER_PAGE`
+o el número de pétalos al inicio de `app/altar.js`.
+
 ## Sin verificar en una TV real (2.0.0)
 
 Instalación con el script de Windows, el aviso de LG en otro modelo, la IP que da `os.networkInterfaces()` en la TV

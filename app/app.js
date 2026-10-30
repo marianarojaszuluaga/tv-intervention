@@ -87,6 +87,7 @@
 
   function show(view) {
     if (current === "home") lastHomeFocus = focused;
+    if (current === "altar") Altar.close();
     document.querySelector("#" + current).classList.remove("on");
     current = view;
     $(view).classList.add("on");
@@ -94,6 +95,7 @@
     focused = null;
     if (view === "home") setFocus(lastHomeFocus || focusables()[0]);
     else setFocus(focusables()[0]);
+    if (view === "altar") Altar.open();
   }
 
   function isField(el) { return el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA"); }
@@ -108,6 +110,7 @@
       return;
     }
 
+    if (current === "altar" && Altar.key(k)) { e.preventDefault(); return; }
     if (k === KEY.LEFT || k === KEY.RIGHT || k === KEY.UP || k === KEY.DOWN) { move(k); e.preventDefault(); return; }
     if (k === KEY.OK) { activate(focused); e.preventDefault(); return; }
     if (k === KEY.BACK || k === KEY.ESC) { if (current !== "home") show("home"); e.preventDefault(); return; }
@@ -175,7 +178,7 @@
     try { localStorage.setItem("settings", JSON.stringify(c)); } catch (e) {}
     document.documentElement.setAttribute("data-theme", c.theme || "terminal");
     var b = c.blocks, cls = [];
-    ["weather", "inputs", "apps", "pad", "qr"].forEach(function (k) { if (b[k] === false) cls.push("no-" + k); });
+    ["weather", "inputs", "apps", "pad", "qr", "altar"].forEach(function (k) { if (b[k] === false) cls.push("no-" + k); });
     if (b.weather === false && b.inputs === false && b.apps === false) cls.push("no-left");
     document.body.className = cls.join(" ");
     var w = words();
@@ -189,6 +192,7 @@
     if (lastApps && JSON.stringify(prev.hidden) !== JSON.stringify(c.hidden)) showApps(lastApps);
     // Si el foco quedó en un bloque que se quitó, vuelve al primero visible.
     if (focused && focused.offsetParent === null) { focused.classList.remove("focus"); focused = null; setFocus(focusables()[0]); }
+    if (b.altar === false && current === "altar") show("home");
     sizeBoard();
     redrawBoard();
     drawQR();
@@ -302,6 +306,12 @@
   function buildDock(apps) {
     var dock = $("dock");
     dock.innerHTML = "";
+    // Primero, el altar de muertos (se quita en Ajustes → En el inicio de la TV).
+    var alt = document.createElement("div");
+    alt.className = "tile altar-tile f";
+    alt.innerHTML = '<div class="alt-flor"></div><div class="name">Altar</div>';
+    alt.onactivate = function () { show("altar"); };
+    dock.appendChild(alt);
     apps.forEach(function (a) {
       var t = document.createElement("div");
       t.className = "tile f";
@@ -455,14 +465,21 @@
   function blockScreensaver() {
     luna("luna://com.webos.service.tvpower/power/registerScreenSaverRequest", { subscribe: true, clientName: ssClient }, function (r) {
       if (!r || !r.timestamp) { report("screensaver", r); return; }
-      var busy = Date.now() - lastDraw < DRAW_AWAKE;
+      // Tampoco mientras el altar está en pantalla: la idea es dejarlo toda la fiesta.
+      var busy = Date.now() - lastDraw < DRAW_AWAKE || current === "altar";
       luna("luna://com.webos.service.tvpower/power/responseScreenSaverRequest", { clientName: ssClient, ack: !busy, timestamp: r.timestamp }, function () {});
-      report("screensaver", { blocked: busy });
+      report("screensaver", { blocked: busy, altar: current === "altar" });
     });
   }
 
   function onLive(op) {
     if (op.t === "config") { applySettings(op.config); return; }
+    if (op.t === "altar" || op.t === "altar-quitar") {
+      // Si llega una ofrenda mientras estamos en el inicio de Terminal, el altar se abre solo y la destaca.
+      if (Altar.live(op) && current === "home" && S.blocks.altar !== false) { show("altar"); Altar.highlight(op.ofrenda); }
+      return;
+    }
+    if (op.t === "state") Altar.live(op);
     if (op.t === "start" || op.t === "pts") lastDraw = Date.now();
     if (op.t === "state") { board = { aspect: op.aspect, strokes: op.strokes }; sizeBoard(); redrawBoard(); return; }
     if (op.t === "aspect") { board.aspect = op.a; sizeBoard(); redrawBoard(); return; }
@@ -486,6 +503,7 @@
   // El servidor vive en un servicio de la TV: se despierta al abrir Terminal.
   luna("luna://com.mariana.retrotv.service/start", {}, function (r) { if (!r || r.returnValue === false) report("service", r); });
 
+  Altar.init(CONFIG.pc);
   applySettings(S);
   setInterval(tick, 10000);
   loadSettings();

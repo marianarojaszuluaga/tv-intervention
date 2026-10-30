@@ -1,0 +1,96 @@
+/* ---------- Altar de muertos ----------
+   Vista a pantalla completa con sus propios colores (no sigue el tema de Terminal).
+   Sin gap, aspect-ratio ni inset: el navegador de la TV es antiguo. Las fotos se colocan en px desde altar.js. */
+@font-face { font-family: "Cormorant"; font-weight: 500; src: url("fonts/cormorant-garamond-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant"; font-weight: 500; font-style: italic; src: url("fonts/cormorant-garamond-latin-500-italic.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant"; font-weight: 600; src: url("fonts/cormorant-garamond-latin-600-normal.woff2") format("woff2"); }
+
+.view#altar { padding: 0; overflow: hidden; z-index: 60; color: #FBEEDD; font-family: "Cormorant", Georgia, serif;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 45%, rgba(242,140,27,0.22), rgba(242,140,27,0) 70%),
+    radial-gradient(ellipse 120% 70% at 50% 110%, rgba(242,140,27,0.28), rgba(242,140,27,0) 60%),
+    linear-gradient(#24150C, #160C07);
+}
+.alt-abs { position: absolute; left: 0; top: 0; }
+
+/* Papel picado */
+.alt-picado { position: absolute; left: 20px; right: 20px; top: 0; height: 160px; z-index: 3; }
+.alt-picado svg { position: absolute; top: 0; width: 196px; height: 160px; -webkit-transform-origin: 50% 0; transform-origin: 50% 0; animation: alt-sway 6s ease-in-out infinite; }
+@keyframes alt-sway { 50% { transform: rotate(1.2deg) skewX(1deg); } }
+
+.alt-titulo { position: absolute; left: 0; right: 0; top: 168px; text-align: center; z-index: 2; font-size: 46px; font-weight: 600; letter-spacing: 0.04em; text-shadow: 0 0 22px rgba(242,140,27,0.6); }
+.alt-titulo em { color: #E9B44C; font-style: italic; font-weight: 500; }
+
+/* Cempasúchil */
+.alt-flor { position: absolute; border-radius: 50%; background-color: #F28C1B;
+  background-image: radial-gradient(circle, #B84F00 0, #B84F00 12%, rgba(0,0,0,0) 13%), repeating-conic-gradient(#F7A227 0deg 8deg, #E07A10 8deg 16deg);
+  box-shadow: inset 0 0 14px rgba(120,40,0,0.6), 0 0 22px rgba(242,140,27,0.35); }
+
+/* Fotos */
+.alt-fotos { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transition: opacity 0.8s; }
+.alt-fotos.fade { opacity: 0; }
+.alt-marco { position: absolute; padding: 12px; border-radius: 6px;
+  background: linear-gradient(135deg, #7A4A2A, #5A3520 40%, #3A2113);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.6), inset 0 0 0 4px #E9B44C, inset 0 0 0 8px #3A2113;
+  animation: alt-llega 1s ease-out both; transition: transform 160ms, box-shadow 160ms; }
+@keyframes alt-llega { from { opacity: 0; transform: translateY(20px) scale(0.96); } }
+.alt-foto { position: absolute; left: 12px; right: 12px; top: 12px; overflow: hidden; border-radius: 3px; background: #000; }
+.alt-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.alt-placa { position: absolute; left: 12px; right: 12px; bottom: 6px; text-align: center; line-height: 1.15; }
+.alt-nombre { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alt-mensaje { font-style: italic; color: #D8BC9C; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.alt-pagina { position: absolute; left: 0; right: 0; bottom: 150px; text-align: center; color: #D8BC9C; font-size: 22px; letter-spacing: 0.3em; }
+
+/* Velas */
+.alt-velas { position: absolute; left: 340px; right: 340px; bottom: 0; height: 140px; z-index: 2; }
+.alt-vela { position: absolute; bottom: 0; width: 28px; margin-left: -14px; border-radius: 4px 4px 0 0; background: linear-gradient(90deg, #E9DCC6, #FFF7EA 45%, #D9C8AD); }
+.alt-llama { position: absolute; left: 50%; bottom: 100%; width: 14px; height: 32px; margin-left: -7px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(ellipse at 50% 75%, #FFF 0, #FFF 20%, #FFD36B 40%, #F28C1B 70%, rgba(242,140,27,0) 72%);
+  transform-origin: 50% 100%; animation: alt-flicker 1.6s ease-in-out infinite alternate; }
+.alt-halo { position: absolute; left: 50%; bottom: 100%; width: 150px; height: 150px; margin: 0 0 -55px -75px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,190,90,0.28), rgba(255,190,90,0) 65%); animation: alt-glow 2.4s ease-in-out infinite alternate; }
+@keyframes alt-flicker { 30% { transform: scaleY(1.08) skewX(-3deg); } 60% { transform: scaleY(0.94) skewX(2deg); } 100% { transform: scaleY(1.04) skewX(-1deg); } }
+@keyframes alt-glow { to { opacity: 0.65; transform: scale(0.92); } }
+
+/* QR */
+.alt-qr { position: absolute; right: 40px; bottom: 32px; width: 210px; padding: 14px; z-index: 6; text-align: center; background: #FBEEDD; color: #2B1A10; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: "Plex", monospace; }
+.alt-qr canvas { display: block; width: 182px; height: 182px; }
+.alt-qr p { font-size: 17px; line-height: 1.25; margin-top: 8px; font-weight: 500; }
+.alt-vacio .alt-qr { display: none; }
+
+/* Sin fotos */
+.alt-sin { position: absolute; left: 0; right: 0; top: 270px; text-align: center; display: none; }
+.alt-vacio .alt-sin { display: block; }
+.alt-sin canvas { width: 360px; height: 360px; padding: 18px; background: #FBEEDD; border-radius: 22px; }
+.alt-sin p { font-size: 40px; max-width: 900px; margin: 26px auto 0; line-height: 1.2; }
+.alt-sin small { display: block; margin-top: 10px; font-family: "Plex", monospace; font-size: 22px; color: #D8BC9C; }
+
+/* Nueva ofrenda */
+.alt-destacado { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.9s;
+  background: radial-gradient(ellipse at center, rgba(40,20,8,0.78), rgba(10,5,2,0.95)); }
+.alt-destacado.on { opacity: 1; }
+.alt-aviso { position: absolute; left: 0; right: 0; top: 150px; text-align: center; font-size: 40px; font-style: italic; color: #E9B44C; letter-spacing: 0.08em; }
+.alt-destacado .alt-marco { animation: none; }
+.alt-destacado.on .alt-marco { animation: alt-aparece 1.4s cubic-bezier(0.2,0.8,0.2,1) both; }
+@keyframes alt-aparece { from { opacity: 0; transform: scale(0.85); } }
+
+/* Pétalos */
+.alt-petalos { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; }
+
+/* Quitar fotos con el control */
+.alt-marco.sel { transform: scale(1.05); box-shadow: 0 0 0 6px #F28C1B, 0 0 40px rgba(242,140,27,0.8), inset 0 0 0 4px #E9B44C, inset 0 0 0 8px #3A2113; z-index: 6; }
+.alt-marco.borrar { box-shadow: 0 0 0 6px #FF5C7A, 0 0 40px rgba(255,92,122,0.8), inset 0 0 0 4px #E9B44C, inset 0 0 0 8px #3A2113; }
+.alt-ayuda { position: absolute; left: 40px; bottom: 32px; z-index: 11; max-width: 1300px; padding: 14px 26px; border-radius: 14px; font-family: "Plex", monospace; font-size: 24px; color: #FBEEDD; background: rgba(22,12,7,0.88); border: 2px solid #5A3520; opacity: 0; transition: opacity 0.3s; }
+.alt-ayuda.on { opacity: 1; }
+.alt-ayuda.bad { border-color: #FF5C7A; }
+
+/* Mosaico del inicio */
+.tile.altar-tile { border-color: #E07A10; background: #2B1A10; }
+.tile.altar-tile .name { color: #F7A227; }
+.tile.altar-tile .alt-flor { position: relative; width: 50px; height: 50px; }
+.no-altar .tile.altar-tile { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .alt-picado svg, .alt-llama, .alt-halo, .alt-marco { animation: none; }
+}
