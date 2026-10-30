@@ -112,8 +112,35 @@
 
     if (current === "altar" && Altar.key(k)) { e.preventDefault(); return; }
     if (k === KEY.LEFT || k === KEY.RIGHT || k === KEY.UP || k === KEY.DOWN) { move(k); e.preventDefault(); return; }
-    if (k === KEY.OK) { activate(focused); e.preventDefault(); return; }
+    if (k === KEY.OK) { if (Date.now() - lastClick > 400) activate(focused); e.preventDefault(); return; }
     if (k === KEY.BACK || k === KEY.ESC) { if (current !== "home") show("home"); e.preventDefault(); return; }
+  });
+
+  // ---------- Puntero del control (Magic Remote) ----------
+  // Apuntar enfoca, clic activa, la rueda mueve como las flechas. Con el puntero visible, webOS
+  // puede mandar también la tecla OK por el mismo clic: se ignora si llega justo después.
+  var lastClick = 0;
+  function focusableAt(target) {
+    for (var el = target; el && el !== document.body; el = el.parentNode) {
+      if (el.classList && el.classList.contains("f")) return $(current).contains(el) ? el : null;
+    }
+    return null;
+  }
+  document.addEventListener("mouseover", function (e) {
+    var el = focusableAt(e.target);
+    if (el && el !== focused) setFocus(el);
+  });
+  document.addEventListener("click", function (e) {
+    var el = focusableAt(e.target);
+    if (!el || isField(document.activeElement)) return;
+    lastClick = Date.now();
+    setFocus(el);
+    activate(el);
+    e.preventDefault();
+  });
+  document.addEventListener("wheel", function (e) {
+    if (current === "altar") return;
+    move(e.deltaY > 0 ? KEY.DOWN : KEY.UP);
   });
 
   function activate(el) {
